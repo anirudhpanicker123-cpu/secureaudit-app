@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureAudit — AI Network Compliance Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .mode-switcher {
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+            margin-bottom: 18px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+        }
+        .mode-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--sans);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 0;
+            transition: all .2s ease;
+        }
+        .mode-tab:hover { color: var(--text); }
+        .mode-tab.active {
+            color: white;
+            background: linear-gradient(135deg, #8b6cff, #6e52e8);
+            box-shadow: 0 6px 20px rgba(111,82,232,.3);
+        }
+        .mode-icon { font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+    <div class="noise"></div>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="ambient ambient-three"></div>
+    <div class="scan-line"></div>
+
+    <nav class="navbar">
+        <a href="/" class="brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z"/>
+                </svg>
+            </div>
+            <div class="brand-text">Secure<span>Audit</span></div>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/history" class="nav-link">History</a>
+        </div>
+        <div class="system-status">
+            <span class="status-pulse"></span>
+            <span>SYSTEM ONLINE</span>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <div class="eyebrow">
+                <span class="eyebrow-dot"></span>
+                AI-POWERED COMPLIANCE ENGINE
+            </div>
+
+            <h1>
+                Find the weakness
+                <span>before they do.</span>
+            </h1>
+
+            <p class="hero-description">
+                Upload a single config or an entire ZIP of network devices — Cisco, Juniper, Arista —
+                and get instant AI-powered compliance analysis with clear remediation steps.
+            </p>
+
+            <div class="mode-switcher" id="modeSwitcher">
+                <button type="button" class="mode-tab active" data-mode="single" onclick="setMode('single')">
+                    <span class="mode-icon">📄</span> Single File
+                </button>
+                <button type="button" class="mode-tab" data-mode="batch" onclick="setMode('batch')">
+                    <span class="mode-icon">📦</span> Batch Upload (ZIP)
+                </button>
+            </div>
+
+            <form method="POST" action="/upload" enctype="multipart/form-data" id="uploadForm">
+                <div class="audit-card" id="auditCard">
+                    <div class="card-top-line"></div>
+
+                    <div class="upload-state" id="uploadState">
+                        <div class="upload-icon-wrap">
+                            <div class="upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <h2 id="uploadTitle">Drop your config file</h2>
+                        <p class="upload-subtitle">
+                            or <button type="button" class="browse-button" id="browseBtn">browse to upload</button>
+                        </p>
+                        <div class="file-types" id="fileTypesSingle">
+                            <span>.TXT</span>
+                            <span>.CONF</span>
+                            <span>.CFG</span>
+                            <span>.CONFIG</span>
+                        </div>
+                        <div class="file-types" id="fileTypesBatch" style="display: none;">
+                            <span>.ZIP</span>
+                            <span>MULTI-FILE</span>
+                            <span>BULK AUDIT</span>
+                        </div>
+                        <div class="drop-hint">
+                            <span class="mini-dot"></span>
+                            <span id="sizeHint">MAX SIZE 16 MB</span>
+                        </div>
+                        <input type="file" name="file" id="fileInput" accept=".txt,.conf,.cfg,.config" hidden>
+                    </div>
+
+                    <div class="selected-state" id="selectedState">
+                        <div class="selected-file-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+                            </svg>
+                        </div>
+                        <div class="selected-file-details file-info">
+                            <span class="selected-label">FILE READY</span>
+                            <strong id="fileName">config.txt</strong>
+                            <span class="file-meta" id="fileMeta">0 KB</span>
+                        </div>
+                        <button type="button" class="remove-file" id="removeFile">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="audit-button" id="submitBtn" disabled>
+                    <span class="audit-button-content">
+                        <span id="submitText">Run Compliance Audit</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </span>
+                </button>
+            </form>
+
+            <div class="trust-row">
+                <div class="trust-item"><span class="trust-check">✓</span> Multi-vendor support</div>
+                <div class="trust-item"><span class="trust-check">✓</span> AI explanations</div>
+                <div class="trust-item"><span class="trust-check">✓</span> NIST &amp; CIS mapping</div>
+                <div class="trust-item"><span class="trust-check">✓</span> Batch processing</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="scan-overlay" id="scanOverlay">
+        <div class="scan-panel">
+            <div class="scan-symbol">
+                <div class="scan-ring ring-one"></div>
+                <div class="scan-ring ring-two"></div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+            </div>
+            <div class="section-kicker">AI COMPLIANCE ENGINE</div>
+            <h2 id="scanTitle">Analyzing Configuration</h2>
+            <p id="scanStage">Initializing scanner...</p>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="scan-progress-row">
+                <span id="progressText">0%</span>
+                <span id="scanTimer">0.0s</span>
+            </div>
+            <div class="scan-steps">
+                <div class="scan-step active" id="step1"><span>01</span> Parsing configuration structure</div>
+                <div class="scan-step" id="step2"><span>02</span> Detecting vendor &amp; syntax</div>
+                <div class="scan-step" id="step3"><span>03</span> Running compliance checks</div>
+                <div class="scan-step" id="step4"><span>04</span> Generating AI explanations</div>
+                <div class="scan-step" id="step5"><span>05</span> Compiling remediation report</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'single';
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadState = document.getElementById('uploadState');
+        const selectedState = document.getElementById('selectedState');
+        const fileName = document.getElementById('fileName');
+        const fileMeta = document.getElementById('fileMeta');
+        const removeFile = document.getElementById('removeFile');
+        const browseBtn = document.getElementById('browseBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const auditCard = document.getElementById('auditCard');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadTitle = document.getElementById('uploadTitle');
+        const fileTypesSingle = document.getElementById('fileTypesSingle');
+        const fileTypesBatch = document.getElementById('fileTypesBatch');
+        const sizeHint = document.getElementById('sizeHint');
+        const submitText = document.getElementById('submitText');
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(function(t) {
+                t.classList.toggle('active', t.getAttribute('data-mode') === mode);
+            });
+
+            if (mode === 'batch') {
+                uploadForm.action = '/upload-batch';
+                fileInput.accept = '.zip';
+                uploadTitle.textContent = 'Drop your ZIP archive';
+                fileTypesSingle.style.display = 'none';
+                fileTypesBatch.style.display = 'flex';
+                sizeHint.textContent = 'MAX SIZE 100 MB';
+                submitText.textContent = 'Run Batch Audit';
+            } else {
+                uploadForm.action = '/upload';
+                fileInput.accept = '.txt,.conf,.cfg,.config';
+                uploadTitle.textContent = 'Drop your config file';
+                fileTypesSingle.style.display = 'flex';
+                fileTypesBatch.style.display = 'none';
+                sizeHint.textContent = 'MAX SIZE 16 MB';
+                submitText.textContent = 'Run Compliance Audit';
+            }
+
+            // Reset file
+            fileInput.value = '';
+            uploadState.style.display = 'flex';
+            selectedState.classList.remove('visible');
+            submitBtn.disabled = true;
+        }
+
+        browseBtn.addEventListener('click', function(e) { e.stopPropagation(); fileInput.click(); });
+        uploadState.addEventListener('click', function() { fileInput.click(); });
+        fileInput.addEventListener('change', function(e) { if (e.target.files.length) showFile(e.target.files[0]); });
+
+        ['dragenter', 'dragover'].forEach(function(evt) {
+            auditCard.addEventListener(evt, function(e) {
+                e.preventDefault();
+                auditCard.classList.add('dragging');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function(evt) {
+            auditCard.addEventListener(evt, function(e) {
+                e.preventDefault();
+                auditCard.classList.remove('dragging');
+            });
+        });
+        auditCard.addEventListener('drop', function(e) {
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                showFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function showFile(file) {
+            fileName.textContent = file.name;
+            fileMeta.textContent = (file.size / 1024).toFixed(1) + ' KB';
+            uploadState.style.display = 'none';
+            selectedState.classList.add('visible');
+            submitBtn.disabled = false;
+        }
+
+        removeFile.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fileInput.value = '';
+            uploadState.style.display = 'flex';
+            selectedState.classList.remove('visible');
+            submitBtn.disabled = true;
+        });
+
+        const scanOverlay = document.getElementById('scanOverlay');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const scanStage = document.getElementById('scanStage');
+        const scanTimer = document.getElementById('scanTimer');
+        const scanTitle = document.getElementById('scanTitle');
+
+        const stageMessages = [
+            { at: 0,   title: 'Analyzing Configuration', text: 'Initializing scanner...' },
+            { at: 10,  title: 'Analyzing Configuration', text: 'Reading configuration file...' },
+            { at: 25,  title: 'Parsing Structure',       text: 'Parsing vendor-specific syntax...' },
+            { at: 45,  title: 'Checking Compliance',     text: 'Running compliance checks...' },
+            { at: 65,  title: 'Checking Compliance',     text: 'Evaluating violations...' },
+            { at: 78,  title: 'AI Reasoning',            text: 'AI is generating explanations...' },
+            { at: 92,  title: 'Building Report',         text: 'Preparing remediation commands...' },
+            { at: 99,  title: 'Almost Done',             text: 'Finalizing report...' }
+        ];
+
+        const batchStageMessages = [
+            { at: 0,   title: 'Extracting Archive',      text: 'Reading ZIP file...' },
+            { at: 10,  title: 'Discovering Configs',     text: 'Finding configuration files...' },
+            { at: 25,  title: 'Processing Batch',        text: 'Parsing vendor-specific syntax...' },
+            { at: 45,  title: 'Running Checks',          text: 'Auditing all configs...' },
+            { at: 65,  title: 'Analyzing',               text: 'Evaluating violations...' },
+            { at: 78,  title: 'AI Reasoning',            text: 'Generating explanations...' },
+            { at: 92,  title: 'Building Report',         text: 'Compiling batch results...' },
+            { at: 99,  title: 'Almost Done',             text: 'Finalizing report...' }
+        ];
+
+        const stepMap = [
+            { pct: 20,  el: 'step1' },
+            { pct: 35,  el: 'step2' },
+            { pct: 60,  el: 'step3' },
+            { pct: 85,  el: 'step4' },
+            { pct: 98,  el: 'step5' }
+        ];
+
+        let scanInterval = null;
+        let timerInterval = null;
+        let startTime = 0;
+
+        function startScan() {
+            scanOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            startTime = Date.now();
+            let progress = 0;
+
+            const messages = currentMode === 'batch' ? batchStageMessages : stageMessages;
+
+            scanInterval = setInterval(function() {
+                const increment = progress < 60 ? 4.5 : progress < 85 ? 2.2 : 0.8;
+                progress = Math.min(progress + increment, 95);
+                progressFill.style.width = progress + '%';
+                progressText.textContent = Math.floor(progress) + '%';
+
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (progress >= messages[i].at) {
+                        scanStage.textContent = messages[i].text;
+                        scanTitle.textContent = messages[i].title;
+                        break;
+                    }
+                }
+
+                stepMap.forEach(function(s) {
+                    const el = document.getElementById(s.el);
+                    if (!el) return;
+                    if (progress >= s.pct) {
+                        el.classList.add('complete');
+                        el.classList.remove('active');
+                    } else if (progress >= s.pct - 15 && !el.classList.contains('complete')) {
+                        el.classList.add('active');
+                    }
+                });
+            }, 55);
+
+            timerInterval = setInterval(function() {
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                scanTimer.textContent = elapsed + 's';
+            }, 100);
+        }
+
+        uploadForm.addEventListener('submit', function(e) {
+            if (submitBtn.disabled) { e.preventDefault(); return; }
+            e.preventDefault();
+            startScan();
+            const delay = currentMode === 'batch' ? 2500 : 1800;
+            setTimeout(function() { uploadForm.submit(); }, delay);
+        });
+    </script>
+</body>
+</html>

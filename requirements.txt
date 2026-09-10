@@ -1,0 +1,6 @@
+Flask
+ciscoconfparse2
+groq
+python-dotenv
+Werkzeug
+gunicorn

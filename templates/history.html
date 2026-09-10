@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit History — SecureAudit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .history-wrap {
+            width: min(1160px, 100%);
+            margin: auto;
+            padding: 60px 24px 120px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 40px;
+        }
+        .history-header h1 {
+            font-size: clamp(36px, 5vw, 56px);
+            letter-spacing: -2.5px;
+            margin-top: 12px;
+        }
+        .history-header h1 span { color: var(--text-muted); }
+        .history-table {
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            overflow: hidden;
+            background: rgba(255,255,255,.012);
+        }
+        .history-table table { width: 100%; border-collapse: collapse; }
+        .history-table th {
+            padding: 16px 18px;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .15em;
+            color: var(--text-muted);
+            background: rgba(255,255,255,.02);
+            border-bottom: 1px solid var(--border);
+        }
+        .history-table td {
+            padding: 16px 18px;
+            font-size: 12px;
+            color: var(--text-soft);
+            border-bottom: 1px solid var(--border);
+        }
+        .history-table tr:last-child td { border-bottom: 0; }
+        .history-table tr:hover td { background: rgba(157,134,255,.03); }
+        .hist-score {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .hist-score.good { color:#67d7a6; background:rgba(86,224,165,.08); border:1px solid rgba(86,224,165,.14); }
+        .hist-score.med  { color:#e3bc69; background:rgba(227,188,105,.08); border:1px solid rgba(227,188,105,.14); }
+        .hist-score.bad  { color:#ff8d9e; background:rgba(255,92,113,.08); border:1px solid rgba(255,92,113,.14); }
+        .hist-btn {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 7px;
+            font-size: 10px;
+            font-family: var(--mono);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            color: var(--text-soft);
+            background: rgba(255,255,255,.03);
+            margin-right: 6px;
+            cursor: pointer;
+            transition: .2s;
+        }
+        .hist-btn:hover { color: white; border-color: rgba(157,134,255,.25); background: rgba(157,134,255,.07); }
+        .hist-btn.del { color: #ff8d9e; }
+        .hist-btn.del:hover { color: #ffb0ba; border-color: rgba(255,92,113,.3); background: rgba(255,92,113,.06); }
+        .empty-state {
+            text-align: center;
+            padding: 100px 24px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: rgba(255,255,255,.012);
+        }
+        .empty-state h2 { font-size: 24px; color: var(--text-muted); margin-bottom: 12px; letter-spacing: -.5px; }
+        .empty-state a {
+            display: inline-block;
+            margin-top: 22px;
+            padding: 13px 25px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 12px 35px rgba(111,82,232,.22);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+    <div class="noise"></div>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <nav class="navbar">
+        <a href="/" class="brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z"/>
+                </svg>
+            </div>
+            <div class="brand-text">Secure<span>Audit</span></div>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/history" class="nav-link">History</a>
+        </div>
+        <div class="system-status">
+            <span class="status-pulse"></span>
+            <span>{{ audits|length }} AUDITS STORED</span>
+        </div>
+    </nav>
+
+    <div class="history-wrap">
+        <div class="history-header">
+            <div>
+                <div class="section-kicker">AUDIT ARCHIVE</div>
+                <h1>Audit <span>History</span></h1>
+            </div>
+            <a href="/" class="new-audit-button">New Audit</a>
+        </div>
+
+        {% if audits %}
+        <div class="history-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>FILE</th>
+                        <th>VENDOR</th>
+                        <th>SCORE</th>
+                        <th>VIOLATIONS</th>
+                        <th>DATE</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for audit in audits %}
+                    <tr>
+                        <td style="color: var(--text-muted); font-family: var(--mono);">#{{ audit.id }}</td>
+                        <td>{{ audit.filename[:40] }}{% if audit.filename|length > 40 %}...{% endif %}</td>
+                        <td><strong style="color: var(--accent-light);">{{ audit.vendor }}</strong></td>
+                        <td>
+                            {% if audit.compliance_score >= 80 %}
+                                <span class="hist-score good">{{ audit.compliance_score }}%</span>
+                            {% elif audit.compliance_score >= 50 %}
+                                <span class="hist-score med">{{ audit.compliance_score }}%</span>
+                            {% else %}
+                                <span class="hist-score bad">{{ audit.compliance_score }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ audit.violation_count }} / {{ audit.total_rules }}</td>
+                        <td style="color: var(--text-muted); font-family: var(--mono); font-size: 10px;">{{ audit.timestamp }}</td>
+                        <td>
+                            <a href="/audit/{{ audit.id }}" class="hist-btn">VIEW</a>
+                            <form action="/audit/{{ audit.id }}/delete" method="POST" style="display:inline;">
+                                <button type="submit" class="hist-btn del" onclick="return confirm('Delete this audit?')">DELETE</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h2>📭 No audits yet</h2>
+            <p style="color: var(--text-muted); font-size: 13px;">Upload your first configuration to get started.</p>
+            <a href="/">Upload Config</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

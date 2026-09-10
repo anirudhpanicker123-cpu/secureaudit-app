@@ -1,0 +1,8 @@
+set system host-name Juniper-SW1
+set system root-authentication plain-text-password
+set system services ssh
+set system syslog host 192.168.1.100
+set system ntp server 192.168.1.1
+set system login message "Authorized Access Only"
+set system login password minimum-length 8
+set system services telnet

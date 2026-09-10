@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Audit — SecureAudit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        :root {
+            --mono: "JetBrains Mono", ui-monospace, monospace;
+            --sans: "Inter", -apple-system, sans-serif;
+            --display: "Inter Tight", "Inter", sans-serif;
+        }
+
+        .batch-container {
+            width: min(1280px, 100%);
+            margin: auto;
+            padding: 40px 24px 120px;
+        }
+
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .batch-header h2 {
+            font-family: var(--display);
+            font-size: clamp(38px, 5vw, 58px);
+            letter-spacing: -3px;
+            margin-top: 14px;
+            line-height: 1;
+        }
+        .batch-header h2 span { color: var(--text-muted); }
+        .batch-header p {
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+
+        .new-audit-btn {
+            padding: 11px 20px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--text-soft);
+            background: rgba(255,255,255,.035);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            font-family: var(--sans);
+            transition: all .2s ease;
+        }
+        .new-audit-btn:hover {
+            color: var(--text);
+            background: rgba(255,255,255,.06);
+        }
+
+        /* Summary Grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+        .summary-card {
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(18,20,31,.9), rgba(8,10,16,.85));
+            position: relative;
+            overflow: hidden;
+        }
+        .summary-card::before {
+            content: "";
+            position: absolute;
+            width: 200px;
+            height: 120px;
+            right: -60px;
+            top: -80px;
+            background: radial-gradient(circle, rgba(157,134,255,.1), transparent 70%);
+        }
+        .summary-label {
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .summary-value {
+            font-family: var(--display);
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -1.5px;
+        }
+        .summary-sub {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        /* Severity breakdown card */
+        .severity-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .severity-mini {
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .sev-high-mini { background: rgba(255,101,117,.08); color: #ff8d9e; border: 1px solid rgba(255,101,117,.15); }
+        .sev-med-mini { background: rgba(243,189,85,.08); color: #e3bc69; border: 1px solid rgba(243,189,85,.15); }
+        .sev-low-mini { background: rgba(116,185,255,.08); color: #74b9ff; border: 1px solid rgba(116,185,255,.15); }
+
+        /* Vendor breakdown */
+        .vendor-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .vendor-chip {
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(157,134,255,.08);
+            border: 1px solid rgba(157,134,255,.2);
+            color: var(--accent-light);
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* Results table */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 50px 0 18px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .results-header h3 {
+            font-family: var(--display);
+            font-size: 22px;
+            letter-spacing: -0.5px;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 6px;
+        }
+        .sort-btn {
+            padding: 7px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.025);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: var(--sans);
+            transition: all .2s ease;
+        }
+        .sort-btn:hover { color: var(--text); }
+        .sort-btn.active {
+            color: white;
+            background: linear-gradient(135deg, #8b6cff, #6e52e8);
+            border-color: transparent;
+        }
+
+        .device-table {
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            overflow: hidden;
+            background: rgba(255,255,255,.012);
+        }
+        .device-table table { width: 100%; border-collapse: collapse; }
+        .device-table th {
+            padding: 15px 18px;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            background: rgba(255,255,255,.02);
+            border-bottom: 1px solid var(--border);
+            font-weight: 500;
+        }
+        .device-table td {
+            padding: 16px 18px;
+            font-size: 13px;
+            color: var(--text-soft);
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .device-table tr:last-child td { border-bottom: 0; }
+        .device-table tr:hover td { background: rgba(157,134,255,.025); }
+
+        .device-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 13px;
+            display: block;
+            word-break: break-all;
+        }
+
+        .device-vendor {
+            padding: 3px 9px;
+            border-radius: 5px;
+            background: rgba(157,134,255,.1);
+            border: 1px solid rgba(157,134,255,.22);
+            color: var(--accent-light);
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .score-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .score-good { color: #39dca4; background: rgba(57,220,164,.08); border: 1px solid rgba(57,220,164,.2); }
+        .score-med  { color: #f3bd55; background: rgba(243,189,85,.08); border: 1px solid rgba(243,189,85,.2); }
+        .score-bad  { color: #ff6575; background: rgba(255,101,117,.08); border: 1px solid rgba(255,101,117,.2); }
+
+        .view-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, #8b6cff, #6e52e8);
+            color: white;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 600;
+            transition: transform .2s ease;
+        }
+        .view-btn:hover { transform: translateY(-1px); }
+
+        @media (max-width: 900px) {
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .summary-grid { grid-template-columns: 1fr; }
+            .device-table th, .device-table td { padding: 12px 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+    <div class="noise"></div>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <nav class="navbar">
+        <a href="/" class="brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z"/>
+                </svg>
+            </div>
+            <div class="brand-text">Secure<span>Audit</span></div>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/history" class="nav-link">History</a>
+        </div>
+        <div class="system-status">
+            <span class="status-pulse"></span>
+            <span>BATCH COMPLETE</span>
+        </div>
+    </nav>
+
+    <div class="batch-container">
+
+        <div class="batch-header">
+            <div>
+                <div class="section-kicker">BATCH AUDIT REPORT</div>
+                <h2>Multi-Device <span>Analysis</span></h2>
+                <p>{{ batch.total_files }} devices scanned · {{ batch.timestamp }}</p>
+            </div>
+            <a href="/" class="new-audit-btn">+ New Batch</a>
+        </div>
+
+        <!-- Summary Grid -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-label">Devices Audited</div>
+                <div class="summary-value" style="color: #a996ff;">{{ batch.total_files }}</div>
+                <div class="summary-sub">configs processed</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">Average Score</div>
+                <div class="summary-value" style="color:
+                    {% if batch.avg_score >= 80 %}#39dca4{% elif batch.avg_score >= 50 %}#f3bd55{% else %}#ff6575{% endif %};">
+                    {{ batch.avg_score }}%
+                </div>
+                <div class="summary-sub">across all devices</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">Total Violations</div>
+                <div class="summary-value" style="color: #ff6575;">{{ batch.total_violations }}</div>
+                <div class="severity-grid">
+                    <div class="severity-mini sev-high-mini">H {{ batch.total_high }}</div>
+                    <div class="severity-mini sev-med-mini">M {{ batch.total_medium }}</div>
+                    <div class="severity-mini sev-low-mini">L {{ batch.total_low }}</div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">Vendors Detected</div>
+                <div class="summary-value" style="color: #6ee7ff;">{{ batch.vendors|length }}</div>
+                <div class="vendor-chips">
+                    {% for vendor_name, count in batch.vendors.items() %}
+                        <span class="vendor-chip">{{ vendor_name }} · {{ count }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="results-header">
+            <h3>Device-by-Device Results</h3>
+            <div class="sort-controls">
+                <button type="button" class="sort-btn active" data-sort="worst" onclick="sortTable('worst')">Worst First</button>
+                <button type="button" class="sort-btn" data-sort="best" onclick="sortTable('best')">Best First</button>
+                <button type="button" class="sort-btn" data-sort="name" onclick="sortTable('name')">A-Z</button>
+            </div>
+        </div>
+
+        <div class="device-table">
+            <table id="deviceTable">
+                <thead>
+                    <tr>
+                        <th>DEVICE / FILE</th>
+                        <th>VENDOR</th>
+                        <th>SCORE</th>
+                        <th>PASSED</th>
+                        <th>VIOLATIONS</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in batch.results %}
+                    <tr data-score="{{ r.compliance_score }}" data-name="{{ r.filename|lower }}">
+                        <td><span class="device-name">{{ r.filename }}</span></td>
+                        <td><span class="device-vendor">{{ r.vendor }}</span></td>
+                        <td>
+                            {% if r.compliance_score >= 80 %}
+                                <span class="score-pill score-good">{{ r.compliance_score }}%</span>
+                            {% elif r.compliance_score >= 50 %}
+                                <span class="score-pill score-med">{{ r.compliance_score }}%</span>
+                            {% else %}
+                                <span class="score-pill score-bad">{{ r.compliance_score }}%</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: #39dca4; font-family: var(--mono); font-weight: 600;">{{ r.passed_count }}</td>
+                        <td style="color: #ff6575; font-family: var(--mono); font-weight: 600;">{{ r.violation_count }}</td>
+                        <td>
+                            <a href="/audit/{{ r.id }}" class="view-btn">View Report →</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        function sortTable(mode) {
+            document.querySelectorAll('.sort-btn').forEach(function(b) {
+                b.classList.toggle('active', b.getAttribute('data-sort') === mode);
+            });
+
+            const tbody = document.querySelector('#deviceTable tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            rows.sort(function(a, b) {
+                if (mode === 'name') {
+                    return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+                }
+                const sa = parseFloat(a.getAttribute('data-score'));
+                const sb = parseFloat(b.getAttribute('data-score'));
+                if (mode === 'best') return sb - sa;
+                return sa - sb;
+            });
+
+            rows.forEach(function(r) { tbody.appendChild(r); });
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+!
+hostname Switch-01
+!
+enable secret MySecurePassword123
+!
+username admin secret AdminPass456
+!
+interface GigabitEthernet0/1
+ description Uplink to Core
+ switchport mode trunk
+!
+line vty 0 4
+ transport input ssh
+ login local
+!
+logging 192.168.1.100
+!
+service password-encryption
+!
+snmp-server community PublicReadOnly RO
+!
+end
