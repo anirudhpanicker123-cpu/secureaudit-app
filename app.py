@@ -43,7 +43,11 @@ from database import init_db, save_audit, get_all_audits, get_audit_by_id, delet
 
 app = Flask(__name__)
 app.config.from_object(Config)
-# Initialize database                                     ADD THESE 2 LINES
+
+# Ensure required directories exist (needed for cloud deployment)
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize database
 init_db()
 
 # Initialize Groq client for AI
