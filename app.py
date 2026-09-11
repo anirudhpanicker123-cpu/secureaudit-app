@@ -40,6 +40,7 @@ from config import Config
 from parser import ConfigParser
 from compliance_engine import ComplianceEngine
 from database import init_db, save_audit, get_all_audits, get_audit_by_id, delete_audit, save_chat_message, get_chat_history
+from knowledge_graph import ComplianceKnowledgeGraph
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -536,7 +537,38 @@ def upload_batch():
     }
 
     return render_template('batch_result.html', batch=batch_summary)
+@app.route('/audit/<int:audit_id>/graph')
+def audit_graph(audit_id):
+    """Return the knowledge graph for an audit as JSON"""
+    audit = get_audit_by_id(audit_id)
+    if not audit:
+        return jsonify({'error': 'Audit not found'}), 404
 
+    kg = ComplianceKnowledgeGraph()
+    kg.build_from_audit(audit)
+
+    return jsonify({
+        'graph': kg.to_json(),
+        'stats': kg.get_stats()
+    })
+
+
+@app.route('/audit/<int:audit_id>/trace/<rule>')
+def audit_trace(audit_id, rule):
+    """Return the trace path for a specific violation rule"""
+    audit = get_audit_by_id(audit_id)
+    if not audit:
+        return jsonify({'error': 'Audit not found'}), 404
+
+    kg = ComplianceKnowledgeGraph()
+    kg.build_from_audit(audit)
+    trace = kg.get_violation_trace(audit, rule)
+
+    if not trace:
+        return jsonify({'error': 'Rule not found in this audit'}), 404
+
+    return jsonify({'trace': trace})
+AQ
 if __name__ == '__main__':
     # Create uploads folder if it doesn't exist
     if not os.path.exists('uploads'):

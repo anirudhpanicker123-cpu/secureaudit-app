@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Report — SecureAudit</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -17,61 +18,40 @@
             --display: "Inter Tight", "Inter", sans-serif;
         }
 
-        .fix-script-btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #8b6cff, #6e52e8);
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            border: 0;
+        .action-btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .action-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 18px; border-radius: 8px; color: white;
+            font-size: 12px; font-weight: 600; cursor: pointer; border: 0;
             box-shadow: 0 8px 25px rgba(111,82,232,.28);
-            font-family: var(--sans);
+            font-family: var(--sans); transition: transform .2s ease;
         }
-        .fix-script-btn:hover { transform: translateY(-2px); }
+        .action-btn.primary { background: linear-gradient(135deg, #8b6cff, #6e52e8); }
+        .action-btn.graph { background: linear-gradient(135deg, #39dca4, #22a97c); box-shadow: 0 8px 25px rgba(57,220,164,.25); }
+        .action-btn:hover { transform: translateY(-2px); }
 
         .severity-filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 22px;
-            padding: 14px 16px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 22px; padding: 14px 16px;
+            border: 1px solid var(--border); border-radius: 12px;
             background: rgba(255,255,255,.012);
         }
         .filter-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 14px;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.025);
-            color: var(--text-muted);
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            font-family: var(--sans);
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: 999px;
+            border: 1px solid var(--border); background: rgba(255,255,255,.025);
+            color: var(--text-muted); font-size: 12px; font-weight: 500;
+            cursor: pointer; font-family: var(--sans);
         }
         .filter-chip.active {
-            color: white;
-            background: linear-gradient(135deg, #8b6cff, #6e52e8);
+            color: white; background: linear-gradient(135deg, #8b6cff, #6e52e8);
             border-color: transparent;
         }
         .filter-count {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 22px;
-            height: 20px;
-            padding: 0 7px;
-            border-radius: 999px;
-            background: rgba(255,255,255,.08);
-            font-family: var(--mono);
-            font-size: 11px;
-            font-weight: 600;
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 22px; height: 20px; padding: 0 7px;
+            border-radius: 999px; background: rgba(255,255,255,.08);
+            font-family: var(--mono); font-size: 11px; font-weight: 600;
         }
         .filter-chip.active .filter-count { background: rgba(255,255,255,.22); }
         .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
@@ -79,286 +59,343 @@
         .dot-medium { background: #f3bd55; }
         .dot-low { background: #74b9ff; }
         .finding.hidden { display: none; }
-        .filter-empty {
-            padding: 50px 20px;
-            text-align: center;
-            border: 1px dashed var(--border);
-            border-radius: 15px;
-            color: var(--text-muted);
-            font-size: 14px;
-            display: none;
-        }
-        .filter-empty.visible { display: block; }
 
-        /* Config-line tracing */
-        .finding-line-trace {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 8px;
-            padding: 6px 12px;
-            border-radius: 7px;
-            background: rgba(255,101,117,.06);
-            border: 1px solid rgba(255,101,117,.15);
-            font-family: var(--mono);
-            font-size: 11px;
-            color: #ff8d9e;
-        }
-        .finding-line-trace .line-num {
-            font-weight: 700;
-            color: #ff6575;
-        }
-        .finding-line-trace .line-content {
-            color: var(--text-soft);
-            font-size: 11px;
-        }
-
-        /* Compliance badges */
-        .compliance-badges {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
-            flex-wrap: wrap;
-        }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 9px;
-            border-radius: 5px;
-            font-family: var(--mono);
-            font-size: 9px;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-        }
-        .badge-nist {
-            background: rgba(110,231,255,.08);
-            border: 1px solid rgba(110,231,255,.2);
-            color: #6ee7ff;
-        }
-        .badge-cis {
-            background: rgba(57,220,164,.08);
-            border: 1px solid rgba(57,220,164,.2);
-            color: #39dca4;
-        }
-
-        /* AI Markdown */
-        .ai-md {
-            color: var(--text-soft);
-            font-size: 13px;
-            line-height: 1.75;
-        }
+        .ai-md { color: var(--text-soft); font-size: 13px; line-height: 1.75; }
         .ai-md h3 {
-            color: var(--accent-light);
-            font-family: var(--display);
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin: 18px 0 10px 0;
-            padding-bottom: 6px;
-            border-bottom: 1px solid rgba(157,134,255,.15);
+            color: var(--accent-light); font-family: var(--display);
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; margin: 18px 0 10px 0;
+            padding-bottom: 6px; border-bottom: 1px solid rgba(157,134,255,.15);
         }
         .ai-md h3:first-child { margin-top: 0; }
         .ai-md ul, .ai-md ol { margin: 8px 0 14px 0; padding-left: 22px; }
-        .ai-md li {
-            margin-bottom: 8px;
-            line-height: 1.65;
-            color: var(--text-soft);
-            font-size: 13px;
-        }
+        .ai-md li { margin-bottom: 8px; line-height: 1.65; color: var(--text-soft); font-size: 13px; }
         .ai-md li::marker { color: var(--accent-light); }
-        .ai-md p { margin: 8px 0; }
         .ai-md strong { color: var(--text); font-weight: 600; }
-        .ai-md em { color: var(--accent-light); font-style: normal; font-weight: 500; }
         .ai-md code {
-            background: rgba(157,134,255,.1);
-            color: #c9baff;
-            padding: 2px 7px;
-            border-radius: 5px;
-            font-family: var(--mono);
-            font-size: 12px;
-            font-weight: 500;
+            background: rgba(157,134,255,.1); color: #c9baff;
+            padding: 2px 7px; border-radius: 5px; font-family: var(--mono);
+            font-size: 12px; font-weight: 500;
         }
 
-        /* Fix Modal */
-        .fix-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 200;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
+        /* ============================================================ */
+        /* KNOWLEDGE GRAPH TRACE — Premium Collapsible Section           */
+        /* ============================================================ */
+
+        .kg-trace-wrap {
+            margin-top: 20px;
+            border: 1px solid rgba(157,134,255,.12);
+            border-radius: 14px;
+            background: linear-gradient(145deg, rgba(157,134,255,.03), rgba(0,0,0,.15));
+            overflow: hidden;
+            transition: border-color .25s ease, box-shadow .25s ease;
         }
-        .fix-modal.open { display: flex; }
-        .fix-modal-backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(2,3,7,.85);
-            backdrop-filter: blur(12px);
+        .kg-trace-wrap:hover {
+            border-color: rgba(157,134,255,.22);
+            box-shadow: 0 8px 32px rgba(111,82,232,.08);
         }
-        .fix-modal-panel {
-            position: relative;
-            width: min(780px, 100%);
-            max-height: 88vh;
+        .kg-trace-wrap.open {
+            border-color: rgba(157,134,255,.28);
+            box-shadow: 0 12px 42px rgba(111,82,232,.12);
+        }
+        .kg-trace-header {
             display: flex;
-            flex-direction: column;
-            border-radius: 20px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background .2s ease;
+            width: 100%;
+            border: 0;
+            background: transparent;
+            text-align: left;
+        }
+        .kg-trace-header:hover {
+            background: rgba(157,134,255,.03);
+        }
+        .kg-trace-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .kg-trace-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a996ff, #ff6ec7);
+            box-shadow: 0 0 12px rgba(169,150,255,.7), 0 0 4px rgba(255,110,199,.6);
+            position: relative;
+            flex-shrink: 0;
+        }
+        .kg-trace-dot::after {
+            content: "";
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px solid rgba(169,150,255,.35);
+            animation: kgPulse 2s ease-in-out infinite;
+        }
+        @keyframes kgPulse {
+            0%, 100% { opacity: .3; transform: scale(.9); }
+            50%      { opacity: .9; transform: scale(1.15); }
+        }
+        .kg-trace-title {
+            font-family: var(--display);
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #f5f7fb 0%, #b8aaff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: var(--text);
+        }
+        .kg-trace-subtitle {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+            font-weight: 500;
+        }
+        .kg-trace-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .kg-trace-steps {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-light);
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(157,134,255,.08);
+            border: 1px solid rgba(157,134,255,.18);
+            font-weight: 600;
+        }
+        .kg-trace-chevron {
+            width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border-radius: 7px;
+            background: rgba(157,134,255,.08);
+            border: 1px solid rgba(157,134,255,.18);
+            color: var(--accent-light);
+            transition: transform .3s ease, background .2s ease;
+            flex-shrink: 0;
+        }
+        .kg-trace-chevron svg { width: 13px; height: 13px; }
+        .kg-trace-wrap.open .kg-trace-chevron {
+            transform: rotate(180deg);
+            background: rgba(157,134,255,.18);
+        }
+        .kg-trace-body {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows .35s cubic-bezier(.2,.75,.2,1);
+        }
+        .kg-trace-wrap.open .kg-trace-body {
+            grid-template-rows: 1fr;
+        }
+        .kg-trace-body-inner { overflow: hidden; }
+        .kg-trace-content {
+            padding: 6px 20px 20px 20px;
+            border-top: 1px solid rgba(157,134,255,.1);
+            margin-top: 6px;
+            padding-top: 18px;
+        }
+        .kg-trace-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            border-radius: 9px;
+            background: rgba(255,255,255,.02);
+            border: 1px solid rgba(255,255,255,.06);
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+        .kg-trace-node .kg-node-type {
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            font-size: 9px;
+            padding: 3px 8px;
+            border-radius: 5px;
+            flex-shrink: 0;
+        }
+        .kg-node-type.kg-device   { background: rgba(169,150,255,.12); color: #c1b5ff; border: 1px solid rgba(169,150,255,.25); }
+        .kg-node-type.kg-violation{ background: rgba(255,101,117,.12); color: #ff8d9e; border: 1px solid rgba(255,101,117,.25); }
+        .kg-node-type.kg-rule     { background: rgba(110,231,255,.1);  color: #6ee7ff; border: 1px solid rgba(110,231,255,.22); }
+        .kg-node-type.kg-nist     { background: rgba(57,220,164,.1);   color: #39dca4; border: 1px solid rgba(57,220,164,.22); }
+        .kg-node-type.kg-cis      { background: rgba(193,181,255,.12); color: #c1b5ff; border: 1px solid rgba(193,181,255,.25); }
+        .kg-node-type.kg-line     { background: rgba(243,189,85,.1);   color: #f3bd55; border: 1px solid rgba(243,189,85,.22); }
+        .kg-trace-node .kg-node-text {
+            color: var(--text-soft);
+            font-weight: 500;
+            word-break: break-all;
+        }
+        .kg-trace-arrow {
+            margin: 4px 0 4px 20px;
+            color: rgba(157,134,255,.4);
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        /* MODALS */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 200;
+            display: none; align-items: center; justify-content: center; padding: 24px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(2,3,7,.85); backdrop-filter: blur(12px);
+        }
+        .modal-panel {
+            position: relative; width: min(900px, 100%); max-height: 90vh;
+            display: flex; flex-direction: column; border-radius: 20px;
             border: 1px solid rgba(255,255,255,.13);
             background: linear-gradient(145deg, #10151e, #080b10);
             overflow: hidden;
         }
-        .fix-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+        .modal-panel.wide { width: min(1200px, 100%); }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
             padding: 26px 28px 20px;
             border-bottom: 1px solid rgba(255,255,255,.06);
         }
-        .fix-modal-header h2 {
-            font-family: var(--display);
-            font-size: 24px;
-            margin-top: 8px;
-            color: var(--text);
+        .modal-header h2 {
+            font-family: var(--display); font-size: 24px;
+            margin-top: 8px; color: var(--text);
         }
-        .fix-modal-close {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
-            background: rgba(255,255,255,.04);
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 15px;
+        .modal-close {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: rgba(255,255,255,.04); color: var(--text-muted);
+            cursor: pointer; font-size: 15px; flex: 0 0 auto; border: 0;
         }
-        .fix-modal-body {
-            flex: 1;
-            overflow: auto;
-            padding: 22px 28px;
-            background: rgba(0,0,0,.28);
+        .modal-body { flex: 1; overflow: auto; padding: 22px 28px; background: rgba(0,0,0,.28); }
+        .modal-body pre {
+            font-family: var(--mono); font-size: 12px; line-height: 1.75;
+            color: #b8c2d4; white-space: pre; overflow-x: auto;
         }
-        .fix-modal-body pre {
-            font-family: var(--mono);
-            font-size: 12px;
-            line-height: 1.75;
-            color: #b8c2d4;
-            white-space: pre;
+        .modal-footer {
+            display: flex; justify-content: flex-end; gap: 10px;
+            padding: 18px 28px; border-top: 1px solid rgba(255,255,255,.06);
         }
-        .fix-modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            padding: 18px 28px;
-            border-top: 1px solid rgba(255,255,255,.06);
+        .action-mini {
+            padding: 11px 20px; border-radius: 9px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            font-family: var(--sans); border: 0;
         }
-        .fix-action-btn {
-            padding: 11px 20px;
-            border-radius: 9px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: var(--sans);
-        }
-        .fix-action-btn.secondary {
-            background: rgba(255,255,255,.04);
-            color: var(--text-soft);
+        .action-mini.secondary {
+            background: rgba(255,255,255,.04); color: var(--text-soft);
             border: 1px solid var(--border);
         }
-        .fix-action-btn.primary {
-            background: linear-gradient(135deg, #8b6cff, #6e52e8);
-            color: white;
-            border: 0;
+        .action-mini.primary {
+            background: linear-gradient(135deg, #8b6cff, #6e52e8); color: white;
         }
-        .fix-action-btn.primary.copied {
-            background: linear-gradient(90deg, #39dca4, #22a97c);
+        .action-mini.copied {
+            background: linear-gradient(90deg, #39dca4, #22a97c); color: white;
         }
 
-        /* Chat */
-        .chat-wrap {
-            margin-top: 70px;
-            padding: 30px;
+        /* GRAPH */
+        #cy {
+            width: 100%; height: 65vh;
+            border-radius: 12px;
+            background: radial-gradient(circle at 50% 50%, rgba(157,134,255,.04), transparent 60%), #05060a;
+            border: 1px solid rgba(255,255,255,.06);
+        }
+        .graph-legend {
+            display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px;
+            padding: 12px 16px; border-radius: 10px;
+            background: rgba(255,255,255,.02);
             border: 1px solid var(--border);
-            border-radius: 18px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text-soft); }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .legend-file { background: #a996ff; box-shadow: 0 0 12px rgba(169,150,255,.7); }
+        .legend-vendor { background: #6ee7ff; box-shadow: 0 0 12px rgba(110,231,255,.7); }
+        .legend-vhigh { background: #ff6575; }
+        .legend-vmedium { background: #f3bd55; }
+        .legend-vlow { background: #74b9ff; }
+        .legend-nist { background: #39dca4; }
+        .legend-cis { background: #a996ff; }
+        .legend-line { background: #697485; }
+        .graph-stats {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            margin-bottom: 14px;
+        }
+        .graph-stat {
+            padding: 12px 16px; border-radius: 10px;
+            background: rgba(255,255,255,.02);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .graph-stat-num { font-family: var(--display); font-size: 24px; font-weight: 700; }
+        .graph-stat-lbl {
+            font-family: var(--mono); font-size: 9px;
+            letter-spacing: 0.1em; color: var(--text-muted);
+            text-transform: uppercase; margin-top: 4px;
+        }
+
+        /* AI CHAT */
+        .chat-wrap {
+            margin-top: 70px; padding: 30px;
+            border: 1px solid var(--border); border-radius: 18px;
             background: linear-gradient(145deg, rgba(15,17,26,.9), rgba(8,10,16,.82));
         }
-        .chat-wrap h3 {
-            font-family: var(--display);
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
+        .chat-wrap h3 { font-family: var(--display); font-size: 20px; margin-bottom: 8px; }
         .chat-wrap > p { color: var(--text-muted); font-size: 12px; margin-bottom: 20px; }
         .chat-messages {
-            min-height: 200px;
-            max-height: 460px;
-            overflow-y: auto;
-            padding: 18px;
-            background: rgba(3,4,8,.5);
-            border: 1px solid var(--border);
-            border-radius: 13px;
+            min-height: 200px; max-height: 460px; overflow-y: auto;
+            padding: 18px; background: rgba(3,4,8,.5);
+            border: 1px solid var(--border); border-radius: 13px;
             margin-bottom: 15px;
         }
         .msg-user {
-            display: inline-block;
-            float: right;
-            clear: both;
-            max-width: 78%;
-            padding: 10px 15px;
+            display: inline-block; float: right; clear: both;
+            max-width: 78%; padding: 10px 15px;
             background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            color: white;
-            border-radius: 14px 14px 2px 14px;
-            font-size: 13px;
-            margin-bottom: 12px;
+            color: white; border-radius: 14px 14px 2px 14px;
+            font-size: 13px; margin-bottom: 12px;
         }
         .msg-ai {
-            display: block;
-            clear: both;
-            max-width: 82%;
-            padding: 12px 15px;
-            background: rgba(255,255,255,.03);
-            border: 1px solid var(--border);
-            color: var(--text-soft);
-            border-radius: 14px 14px 14px 2px;
-            font-size: 13px;
-            line-height: 1.65;
-            margin-bottom: 12px;
+            display: block; clear: both; max-width: 82%;
+            padding: 12px 15px; background: rgba(255,255,255,.03);
+            border: 1px solid var(--border); color: var(--text-soft);
+            border-radius: 14px 14px 14px 2px; font-size: 13px;
+            line-height: 1.65; margin-bottom: 12px;
         }
         .msg-ai code {
-            background: rgba(157,134,255,.1);
-            color: #b8aaff;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: var(--mono);
-            font-size: 12px;
+            background: rgba(157,134,255,.1); color: #b8aaff;
+            padding: 2px 6px; border-radius: 4px;
+            font-family: var(--mono); font-size: 12px;
         }
         .chat-input-row { display: flex; gap: 10px; }
         .chat-input-row input {
-            flex: 1;
-            padding: 13px 18px;
+            flex: 1; padding: 13px 18px;
             background: rgba(255,255,255,.03);
-            border: 1px solid var(--border);
-            border-radius: 50px;
-            color: var(--text);
-            font-size: 13px;
-            outline: none;
+            border: 1px solid var(--border); border-radius: 50px;
+            color: var(--text); font-size: 13px; outline: none;
         }
         .chat-input-row button {
             padding: 13px 28px;
             background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            color: white;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
+            color: white; border-radius: 50px; font-weight: 600;
+            font-size: 13px; cursor: pointer; border: 0;
         }
         .quick-q { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 15px; }
         .quick-q button {
-            padding: 7px 14px;
-            background: rgba(157,134,255,.06);
+            padding: 7px 14px; background: rgba(157,134,255,.06);
             border: 1px solid rgba(157,134,255,.18);
-            color: var(--accent-light);
-            border-radius: 20px;
-            font-size: 12px;
-            cursor: pointer;
+            color: var(--accent-light); border-radius: 20px;
+            font-size: 12px; cursor: pointer;
         }
     </style>
 </head>
@@ -447,10 +484,11 @@
                     <div class="section-kicker">SECURITY FINDINGS</div>
                     <h3>{{ results.violation_count }} Violations Found</h3>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" class="fix-script-btn" onclick="openFixScript()">
-                        🔧 Generate Fix Script
-                    </button>
+                <div class="action-btn-row">
+                    {% if results.id %}
+                    <button type="button" class="action-btn graph" onclick="openGraph()">🕸 Knowledge Graph</button>
+                    {% endif %}
+                    <button type="button" class="action-btn primary" onclick="openFixScript()">🔧 Generate Fix Script</button>
                 </div>
             </div>
 
@@ -500,7 +538,6 @@
                                         <code>{{ violation.remediation }}</code>
                                         <button class="copy-button" onclick="navigator.clipboard.writeText('{{ violation.remediation }}'); this.textContent='COPIED';">COPY</button>
                                     </div>
-
                                     {% if violation.line_number %}
                                     <div class="finding-line-trace">
                                         <span class="line-num">Line {{ violation.line_number }}:</span>
@@ -513,10 +550,80 @@
                                     {% if violation.ai_explanation %}
                                         <div class="ai-md" data-md="{{ violation.ai_explanation | e }}"></div>
                                     {% else %}
-                                        <p style="color: var(--text-muted); font-size: 13px;">AI explanation unavailable.</p>
+                                        <p style="color: var(--text-muted); font-size: 13px;">AI explanation generated for HIGH severity violations only.</p>
                                     {% endif %}
                                 </div>
                             </div>
+
+                            <!-- ============================================ -->
+                            <!-- KNOWLEDGE GRAPH TRACE (collapsible)          -->
+                            <!-- ============================================ -->
+                            <div class="kg-trace-wrap">
+                                <button type="button" class="kg-trace-header">
+                                    <div class="kg-trace-label">
+                                        <span class="kg-trace-dot"></span>
+                                        <span class="kg-trace-title">Knowledge Graph Trace</span>
+                                        <span class="kg-trace-subtitle">· Relationship Chain</span>
+                                    </div>
+                                    <div class="kg-trace-meta">
+                                        <span class="kg-trace-steps">6 HOPS</span>
+                                        <span class="kg-trace-chevron">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M6 9l6 6 6-6"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </button>
+
+                                <div class="kg-trace-body">
+                                    <div class="kg-trace-body-inner">
+                                        <div class="kg-trace-content">
+
+                                            <div class="kg-trace-node">
+                                                <span class="kg-node-type kg-device">DEVICE</span>
+                                                <span class="kg-node-text">{{ results.filename }}</span>
+                                            </div>
+
+                                            <div class="kg-trace-arrow">↓</div>
+
+                                            <div class="kg-trace-node">
+                                                <span class="kg-node-type kg-violation">VIOLATION</span>
+                                                <span class="kg-node-text">{{ violation.description }}</span>
+                                            </div>
+
+                                            <div class="kg-trace-arrow">↓</div>
+
+                                            <div class="kg-trace-node">
+                                                <span class="kg-node-type kg-rule">RULE</span>
+                                                <span class="kg-node-text">{{ violation.rule }}</span>
+                                            </div>
+
+                                            {% if violation.nist_control %}
+                                            <div class="kg-trace-node">
+                                                <span class="kg-node-type kg-nist">NIST</span>
+                                                <span class="kg-node-text">{{ violation.nist_control }}</span>
+                                            </div>
+                                            {% endif %}
+
+                                            {% if violation.cis_benchmark %}
+                                            <div class="kg-trace-node">
+                                                <span class="kg-node-type kg-cis">CIS</span>
+                                                <span class="kg-node-text">{{ violation.cis_benchmark }}</span>
+                                            </div>
+                                            {% endif %}
+
+                                            {% if violation.line_number %}
+                                            <div class="kg-trace-node">
+                                                <span class="kg-node-type kg-line">LINE</span>
+                                                <span class="kg-node-text">{{ violation.line_number }}: {{ violation.line_content or 'config line' }}</span>
+                                            </div>
+                                            {% endif %}
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -577,10 +684,65 @@
         </div>
     </section>
 
-    <div class="fix-modal" id="fixModal">
-        <div class="fix-modal-backdrop" onclick="closeFixScript()"></div>
-        <div class="fix-modal-panel">
-            <div class="fix-modal-header">
+    <!-- KNOWLEDGE GRAPH MODAL -->
+    <div class="modal-overlay" id="graphModal">
+        <div class="modal-backdrop" onclick="closeGraph()"></div>
+        <div class="modal-panel wide">
+            <div class="modal-header">
+                <div>
+                    <div class="section-kicker">RELATIONSHIP VISUALIZATION</div>
+                    <h2>Compliance Knowledge Graph</h2>
+                    <p style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
+                        Interactive graph linking vendor → violations → NIST/CIS controls. Drag nodes to rearrange.
+                    </p>
+                </div>
+                <button type="button" class="modal-close" onclick="closeGraph()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="graph-stats" id="graphStats">
+                    <div class="graph-stat">
+                        <div class="graph-stat-num" id="statNodes">—</div>
+                        <div class="graph-stat-lbl">Total Nodes</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="graph-stat-num" id="statEdges">—</div>
+                        <div class="graph-stat-lbl">Relationships</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="graph-stat-num" id="statViolations">—</div>
+                        <div class="graph-stat-lbl">Violations</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="graph-stat-num" id="statControls">—</div>
+                        <div class="graph-stat-lbl">NIST+CIS Controls</div>
+                    </div>
+                </div>
+
+                <div class="graph-legend">
+                    <div class="legend-item"><span class="legend-dot legend-file"></span> File</div>
+                    <div class="legend-item"><span class="legend-dot legend-vendor"></span> Vendor</div>
+                    <div class="legend-item"><span class="legend-dot legend-vhigh"></span> HIGH</div>
+                    <div class="legend-item"><span class="legend-dot legend-vmedium"></span> MEDIUM</div>
+                    <div class="legend-item"><span class="legend-dot legend-vlow"></span> LOW</div>
+                    <div class="legend-item"><span class="legend-dot legend-nist"></span> NIST Control</div>
+                    <div class="legend-item"><span class="legend-dot legend-cis"></span> CIS Benchmark</div>
+                    <div class="legend-item"><span class="legend-dot legend-line"></span> Config Line</div>
+                </div>
+
+                <div id="cy"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-mini secondary" onclick="resetGraphLayout()">↺ Reset Layout</button>
+                <button type="button" class="action-mini primary" onclick="closeGraph()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIX SCRIPT MODAL -->
+    <div class="modal-overlay" id="fixModal">
+        <div class="modal-backdrop" onclick="closeFixScript()"></div>
+        <div class="modal-panel">
+            <div class="modal-header">
                 <div>
                     <div class="section-kicker">REMEDIATION SCRIPT</div>
                     <h2>Fix All Violations</h2>
@@ -588,14 +750,14 @@
                         Copy this script and paste it into the device CLI.
                     </p>
                 </div>
-                <button type="button" class="fix-modal-close" onclick="closeFixScript()">✕</button>
+                <button type="button" class="modal-close" onclick="closeFixScript()">✕</button>
             </div>
-            <div class="fix-modal-body">
+            <div class="modal-body">
                 <pre id="fixScriptContent">Loading...</pre>
             </div>
-            <div class="fix-modal-footer">
-                <button type="button" class="fix-action-btn secondary" onclick="downloadFixScript()">💾 Download .txt</button>
-                <button type="button" class="fix-action-btn primary" id="copyBtn" onclick="copyFixScript()">📋 Copy to Clipboard</button>
+            <div class="modal-footer">
+                <button type="button" class="action-mini secondary" onclick="downloadFixScript()">💾 Download .txt</button>
+                <button type="button" class="action-mini primary" id="copyBtn" onclick="copyFixScript()">📋 Copy to Clipboard</button>
             </div>
         </div>
     </div>
@@ -709,10 +871,6 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeFixScript();
-        });
     </script>
 
     <script>
@@ -750,32 +908,21 @@
                 c.classList.toggle('active', c.getAttribute('data-filter') === filter);
             });
             const findings = document.querySelectorAll('.finding[data-severity]');
-            let visibleCount = 0;
             findings.forEach(function(f) {
                 const sev = f.getAttribute('data-severity');
                 if (sev === 'pass') return;
                 if (filter === 'all' || sev === filter) {
                     f.classList.remove('hidden');
-                    visibleCount++;
                 } else {
                     f.classList.add('hidden');
                 }
             });
-            let empty = document.getElementById('filterEmpty');
-            if (!empty) {
-                empty = document.createElement('div');
-                empty.id = 'filterEmpty';
-                empty.className = 'filter-empty';
-                empty.textContent = 'No findings match this severity.';
-                const list = document.querySelector('.findings-list');
-                if (list && list.parentNode) list.parentNode.insertBefore(empty, list.nextSibling);
-            }
-            if (visibleCount === 0 && filter !== 'all') empty.classList.add('visible');
-            else empty.classList.remove('visible');
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             initFilter();
+
+            // Render AI markdown
             document.querySelectorAll('.ai-md').forEach(function(el) {
                 const raw = el.getAttribute('data-md');
                 if (!raw) return;
@@ -785,6 +932,136 @@
                 if (typeof marked !== 'undefined') el.innerHTML = marked.parse(decoded);
                 else el.textContent = decoded;
             });
+
+            // KG Trace toggle
+            document.querySelectorAll('.kg-trace-header').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const wrap = this.closest('.kg-trace-wrap');
+                    wrap.classList.toggle('open');
+                });
+            });
+        });
+    </script>
+
+    <script>
+        // ============================================
+        // KNOWLEDGE GRAPH VISUALIZATION
+        // ============================================
+        let cyInstance = null;
+        const auditIdForGraph = {{ results.id or 0 }};
+
+        const nodeColors = {
+            file: { bg: '#a996ff', border: '#8b6cff' },
+            vendor: { bg: '#6ee7ff', border: '#22d3ee' },
+            nist: { bg: '#39dca4', border: '#22a97c' },
+            cis: { bg: '#c1b5ff', border: '#a996ff' },
+            line: { bg: '#697485', border: '#4a5568' }
+        };
+
+        function getViolationColor(severity) {
+            if (severity === 'HIGH') return { bg: '#ff6575', border: '#e5394f' };
+            if (severity === 'MEDIUM') return { bg: '#f3bd55', border: '#e0a02d' };
+            return { bg: '#74b9ff', border: '#4a9ce8' };
+        }
+
+        async function openGraph() {
+            if (!auditIdForGraph) { alert('This audit is not saved.'); return; }
+            document.getElementById('graphModal').classList.add('open');
+            document.getElementById('cy').innerHTML = '';
+
+            try {
+                const res = await fetch('/audit/' + auditIdForGraph + '/graph');
+                const data = await res.json();
+
+                if (!data.graph) {
+                    document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No graph data available.</div>';
+                    return;
+                }
+
+                const stats = data.stats;
+                document.getElementById('statNodes').textContent = stats.total_nodes;
+                document.getElementById('statEdges').textContent = stats.total_edges;
+                document.getElementById('statViolations').textContent = stats.by_type.violation || 0;
+                const nistCount = stats.by_type.nist || 0;
+                const cisCount = stats.by_type.cis || 0;
+                document.getElementById('statControls').textContent = nistCount + cisCount;
+
+                const elements = [];
+                data.graph.nodes.forEach(function(n) {
+                    const type = n.data.type;
+                    let colors;
+                    if (type === 'violation') colors = getViolationColor(n.data.severity);
+                    else colors = nodeColors[type] || { bg: '#697485', border: '#4a5568' };
+                    elements.push({
+                        data: { id: n.data.id, label: n.data.label, type: type, severity: n.data.severity },
+                        style: { 'background-color': colors.bg, 'border-color': colors.border }
+                    });
+                });
+                data.graph.edges.forEach(function(e) {
+                    elements.push({ data: e.data });
+                });
+
+                cyInstance = cytoscape({
+                    container: document.getElementById('cy'),
+                    elements: elements,
+                    style: [
+                        { selector: 'node', style: {
+                            'label': 'data(label)', 'color': '#f5f7fb',
+                            'font-size': '10px', 'font-family': 'Inter, sans-serif',
+                            'font-weight': 600, 'text-valign': 'bottom',
+                            'text-halign': 'center', 'text-margin-y': 8,
+                            'background-color': 'data(bg)',
+                            'border-width': 2, 'border-color': 'data(border)',
+                            'width': 22, 'height': 22,
+                            'text-wrap': 'wrap', 'text-max-width': 120,
+                            'text-outline-color': '#06080c', 'text-outline-width': 2
+                        }},
+                        { selector: 'node[type="file"]', style: { 'width': 42, 'height': 42, 'font-size': '12px', 'font-weight': 700 }},
+                        { selector: 'node[type="vendor"]', style: { 'width': 34, 'height': 34, 'font-size': '11px', 'font-weight': 700 }},
+                        { selector: 'node[type="violation"]', style: { 'width': 26, 'height': 26 }},
+                        { selector: 'node[type="nist"], node[type="cis"]', style: { 'width': 24, 'height': 24, 'font-size': '9px' }},
+                        { selector: 'node[type="line"]', style: { 'width': 16, 'height': 16, 'font-size': '9px' }},
+                        { selector: 'edge', style: {
+                            'width': 1.5, 'line-color': 'rgba(157,134,255,.25)',
+                            'target-arrow-color': 'rgba(157,134,255,.5)',
+                            'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'arrow-scale': 0.7
+                        }},
+                        { selector: 'edge[relation="violates"]', style: { 'line-color': 'rgba(255,101,117,.3)', 'target-arrow-color': 'rgba(255,101,117,.6)' }},
+                        { selector: 'edge[relation="detected_as"]', style: { 'line-color': 'rgba(110,231,255,.4)', 'target-arrow-color': 'rgba(110,231,255,.7)', 'width': 2 }},
+                        { selector: 'edge[relation="produced"]', style: { 'line-color': 'rgba(255,101,117,.2)', 'target-arrow-color': 'rgba(255,101,117,.5)' }},
+                        { selector: ':selected', style: { 'border-width': 4, 'border-color': '#ffffff' }}
+                    ],
+                    layout: {
+                        name: 'breadthfirst', directed: true, padding: 30,
+                        spacingFactor: 1.4, animate: true, animationDuration: 700,
+                        roots: 'node[type="file"]'
+                    },
+                    wheelSensitivity: 0.2, minZoom: 0.3, maxZoom: 3
+                });
+            } catch (err) {
+                console.error('Graph error:', err);
+                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#ff6575;">Failed to load graph.</div>';
+            }
+        }
+
+        function closeGraph() {
+            document.getElementById('graphModal').classList.remove('open');
+        }
+
+        function resetGraphLayout() {
+            if (!cyInstance) return;
+            cyInstance.layout({
+                name: 'breadthfirst', directed: true, padding: 30,
+                spacingFactor: 1.4, animate: true, animationDuration: 500,
+                roots: 'node[type="file"]'
+            }).run();
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeFixScript();
+                closeGraph();
+            }
         });
     </script>
 

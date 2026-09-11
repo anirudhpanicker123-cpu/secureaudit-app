@@ -9,7 +9,7 @@ class Config:
     UPLOAD_FOLDER = 'uploads'
     ALLOWED_EXTENSIONS = {'txt', 'conf', 'cfg', 'config'}
     ALLOWED_ZIP = {'zip'}
-    MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB for ZIP uploads
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024
 
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY') or 'your-groq-api-key-here'
 
@@ -20,12 +20,18 @@ class Config:
             'check_cisco': 'enable secret',
             'check_juniper': 'set system root-authentication',
             'check_arista': 'enable secret',
+            'check_fortinet': 'set system admin',
+            'check_paloalto': 'set mgt-config users',
+            'check_huawei': 'set authentication password',
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 IA-5',
             'cis_benchmark': 'CIS 1.1.1',
             'remediation_cisco': 'enable secret <strong-password>',
             'remediation_juniper': 'set system root-authentication plain-text-password',
-            'remediation_arista': 'enable secret <strong-password>'
+            'remediation_arista': 'enable secret <strong-password>',
+            'remediation_fortinet': 'config system admin\n    edit admin\n    set password <strong-password>\nend',
+            'remediation_paloalto': 'set mgt-config users admin phash <strong-password>',
+            'remediation_huawei': 'aaa\n local-user admin password cipher <strong-password>'
         },
         'ssh_only': {
             'description': 'SSH must be used instead of Telnet',
@@ -33,12 +39,18 @@ class Config:
             'check_cisco': 'transport input ssh',
             'check_juniper': 'set system services ssh',
             'check_arista': 'management ssh',
+            'check_fortinet': 'set ssh enable',
+            'check_paloalto': 'set deviceconfig system ssh',
+            'check_huawei': 'stelnet server enable',
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 SC-8',
             'cis_benchmark': 'CIS 2.4',
             'remediation_cisco': 'transport input ssh',
             'remediation_juniper': 'set system services ssh',
-            'remediation_arista': 'management ssh'
+            'remediation_arista': 'management ssh',
+            'remediation_fortinet': 'config system global\n    set ssh enable\nend',
+            'remediation_paloalto': 'set deviceconfig system ssh enable yes',
+            'remediation_huawei': 'stelnet server enable'
         },
         'logging': {
             'description': 'Logging must be enabled',
@@ -46,77 +58,113 @@ class Config:
             'check_cisco': 'logging',
             'check_juniper': 'set system syslog',
             'check_arista': 'logging',
+            'check_fortinet': 'config log syslogd',
+            'check_paloalto': 'set deviceconfig system logging',
+            'check_huawei': 'info-center enable',
             'severity': 'MEDIUM',
             'nist_control': 'NIST SP 800-53 AU-2',
             'cis_benchmark': 'CIS 8.2',
             'remediation_cisco': 'logging <server-ip>',
             'remediation_juniper': 'set system syslog host <server-ip>',
-            'remediation_arista': 'logging host <server-ip>'
+            'remediation_arista': 'logging host <server-ip>',
+            'remediation_fortinet': 'config log syslogd setting\n    set status enable\n    set server <server-ip>\nend',
+            'remediation_paloalto': 'set deviceconfig system logging syslog <server-ip>',
+            'remediation_huawei': 'info-center loghost <server-ip>'
         },
         'password_encryption': {
-            'description': 'Passwords should be encrypted with service password-encryption',
+            'description': 'Passwords should be encrypted',
             'check_type': 'positive',
             'check_cisco': 'service password-encryption',
             'check_juniper': 'set system authentication-order password',
             'check_arista': 'service password-encryption',
+            'check_fortinet': 'set password-encryption',
+            'check_paloalto': 'set deviceconfig system password-complexity',
+            'check_huawei': 'password cipher',
             'severity': 'MEDIUM',
             'nist_control': 'NIST SP 800-53 IA-5',
             'cis_benchmark': 'CIS 1.1.2',
             'remediation_cisco': 'service password-encryption',
             'remediation_juniper': 'set system authentication-order password',
-            'remediation_arista': 'service password-encryption'
+            'remediation_arista': 'service password-encryption',
+            'remediation_fortinet': 'config system global\n    set password-encryption enable\nend',
+            'remediation_paloalto': 'set deviceconfig system password-complexity enabled yes',
+            'remediation_huawei': 'password cipher <password>'
         },
         'no_default_snmp': {
-            'description': 'Default SNMP community strings (public/private) must be changed',
+            'description': 'Default SNMP community strings must be changed',
             'check_type': 'negative',
             'check_cisco': ['snmp-server community public', 'snmp-server community private'],
             'check_juniper': ['set snmp community public', 'set snmp community private'],
             'check_arista': ['snmp-server community public', 'snmp-server community private'],
+            'check_fortinet': ['set snmp community public', 'set snmp community private'],
+            'check_paloalto': ['set deviceconfig system snmp community public', 'set deviceconfig system snmp community private'],
+            'check_huawei': ['snmp-agent community read public', 'snmp-agent community write private'],
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 SC-8',
             'cis_benchmark': 'CIS 2.7',
             'remediation_cisco': 'no snmp-server community public',
             'remediation_juniper': 'delete snmp community public',
-            'remediation_arista': 'no snmp-server community public'
+            'remediation_arista': 'no snmp-server community public',
+            'remediation_fortinet': 'config system snmp community\n    delete <community-name>\nend',
+            'remediation_paloalto': 'delete deviceconfig system snmp community public',
+            'remediation_huawei': 'undo snmp-agent community read public'
         },
         'no_telnet': {
-            'description': 'Telnet must be disabled (use SSH instead)',
+            'description': 'Telnet must be disabled',
             'check_type': 'negative',
             'check_cisco': ['transport input telnet', 'transport input all'],
             'check_juniper': ['set system services telnet'],
-            'check_arista': ['management telnet', 'transport input telnet', 'transport input all'],
+            'check_arista': ['management telnet', 'transport input telnet'],
+            'check_fortinet': ['set telnet enable'],
+            'check_paloalto': ['set deviceconfig system telnet enable yes'],
+            'check_huawei': ['telnet server enable'],
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 SC-8',
             'cis_benchmark': 'CIS 2.4',
             'remediation_cisco': 'transport input ssh',
             'remediation_juniper': 'delete system services telnet',
-            'remediation_arista': 'management ssh'
+            'remediation_arista': 'management ssh',
+            'remediation_fortinet': 'config system global\n    set telnet disable\nend',
+            'remediation_paloalto': 'set deviceconfig system telnet enable no',
+            'remediation_huawei': 'undo telnet server enable'
         },
         'no_http_server': {
-            'description': 'HTTP server should be disabled (use HTTPS)',
+            'description': 'HTTP server should be disabled',
             'check_type': 'negative',
             'check_cisco': ['ip http server'],
             'check_juniper': ['set system services web-management http'],
             'check_arista': ['ip http server', 'management api http-commands'],
+            'check_fortinet': ['set http enable'],
+            'check_paloalto': ['set deviceconfig system http enable yes'],
+            'check_huawei': ['http server enable'],
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 SC-8',
             'cis_benchmark': 'CIS 2.6',
             'remediation_cisco': 'no ip http server',
             'remediation_juniper': 'delete system services web-management http',
-            'remediation_arista': 'no management api http-commands'
+            'remediation_arista': 'no management api http-commands',
+            'remediation_fortinet': 'config system global\n    set http disable\nend',
+            'remediation_paloalto': 'set deviceconfig system http enable no',
+            'remediation_huawei': 'undo http server enable'
         },
         'banner_motd': {
-            'description': 'Login banner (MOTD) must be configured',
+            'description': 'Login banner must be configured',
             'check_type': 'positive',
             'check_cisco': 'banner motd',
             'check_juniper': 'set system login message',
             'check_arista': 'banner motd',
+            'check_fortinet': 'set pre-login-banner',
+            'check_paloalto': 'set deviceconfig system login-banner',
+            'check_huawei': 'header login information',
             'severity': 'MEDIUM',
             'nist_control': 'NIST SP 800-53 AC-8',
             'cis_benchmark': 'CIS 1.7',
             'remediation_cisco': 'banner motd ^C Authorized Access Only ^C',
             'remediation_juniper': 'set system login message "Authorized Access Only"',
-            'remediation_arista': 'banner motd ^C Authorized Access Only ^C'
+            'remediation_arista': 'banner motd ^C Authorized Access Only ^C',
+            'remediation_fortinet': 'config system global\n    set pre-login-banner enable\n    set pre-login-banner-message "Authorized Access Only"\nend',
+            'remediation_paloalto': 'set deviceconfig system login-banner "Authorized Access Only"',
+            'remediation_huawei': 'header login information "Authorized Access Only"'
         },
         'no_cdp': {
             'description': 'CDP/LLDP should be disabled on external interfaces',
@@ -124,25 +172,37 @@ class Config:
             'check_cisco': ['cdp run'],
             'check_juniper': ['set protocols cdp'],
             'check_arista': ['lldp run'],
+            'check_fortinet': ['set lldp enable'],
+            'check_paloalto': ['set deviceconfig system lldp enable yes'],
+            'check_huawei': ['lldp enable'],
             'severity': 'MEDIUM',
             'nist_control': 'NIST SP 800-53 SC-7',
             'cis_benchmark': 'CIS 2.5',
             'remediation_cisco': 'no cdp run',
             'remediation_juniper': 'delete protocols cdp',
-            'remediation_arista': 'no lldp run'
+            'remediation_arista': 'no lldp run',
+            'remediation_fortinet': 'config system global\n    set lldp disable\nend',
+            'remediation_paloalto': 'set deviceconfig system lldp enable no',
+            'remediation_huawei': 'undo lldp enable'
         },
         'ntp_configured': {
-            'description': 'NTP must be configured for accurate logging',
+            'description': 'NTP must be configured',
             'check_type': 'positive',
             'check_cisco': 'ntp server',
             'check_juniper': 'set system ntp server',
             'check_arista': 'ntp server',
+            'check_fortinet': 'set ntp server',
+            'check_paloalto': 'set deviceconfig system ntp-servers',
+            'check_huawei': 'ntp-service unicast-server',
             'severity': 'MEDIUM',
             'nist_control': 'NIST SP 800-53 AU-8',
             'cis_benchmark': 'CIS 8.4',
             'remediation_cisco': 'ntp server <ntp-server-ip>',
             'remediation_juniper': 'set system ntp server <ntp-server-ip>',
-            'remediation_arista': 'ntp server <ntp-server-ip>'
+            'remediation_arista': 'ntp server <ntp-server-ip>',
+            'remediation_fortinet': 'config system ntp\n    set ntpsync enable\n    set server <ntp-server-ip>\nend',
+            'remediation_paloalto': 'set deviceconfig system ntp-servers primary-ntp-server <ntp-server-ip>',
+            'remediation_huawei': 'ntp-service unicast-server <ntp-server-ip>'
         },
         'aaa_configured': {
             'description': 'AAA authentication must be enabled',
@@ -150,12 +210,18 @@ class Config:
             'check_cisco': 'aaa new-model',
             'check_juniper': 'set system authentication-order',
             'check_arista': 'aaa authentication',
+            'check_fortinet': 'set auth-type',
+            'check_paloalto': 'set deviceconfig system authentication',
+            'check_huawei': 'aaa',
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 IA-2',
             'cis_benchmark': 'CIS 1.2',
             'remediation_cisco': 'aaa new-model',
             'remediation_juniper': 'set system authentication-order radius',
-            'remediation_arista': 'aaa authentication login default local'
+            'remediation_arista': 'aaa authentication login default local',
+            'remediation_fortinet': 'config system global\n    set auth-type radius\nend',
+            'remediation_paloalto': 'set deviceconfig system authentication radius',
+            'remediation_huawei': 'aaa\n authentication-scheme default'
         },
         'password_min_length': {
             'description': 'Minimum password length must be at least 8',
@@ -163,12 +229,18 @@ class Config:
             'check_cisco': 'security passwords min-length',
             'check_juniper': 'set system login password minimum-length',
             'check_arista': 'security passwords min-length',
+            'check_fortinet': 'set password-min-length',
+            'check_paloalto': 'set deviceconfig system password-complexity minimum-length',
+            'check_huawei': 'password min-length',
             'severity': 'MEDIUM',
             'nist_control': 'NIST SP 800-53 IA-5',
             'cis_benchmark': 'CIS 1.1.3',
             'remediation_cisco': 'security passwords min-length 8',
             'remediation_juniper': 'set system login password minimum-length 8',
-            'remediation_arista': 'security passwords min-length 8'
+            'remediation_arista': 'security passwords min-length 8',
+            'remediation_fortinet': 'config system global\n    set password-min-length 8\nend',
+            'remediation_paloalto': 'set deviceconfig system password-complexity minimum-length 8',
+            'remediation_huawei': 'password min-length 8'
         },
         'exec_timeout': {
             'description': 'EXEC timeout must be configured (max 10 minutes)',
@@ -176,12 +248,18 @@ class Config:
             'check_cisco': 'exec-timeout',
             'check_juniper': 'set system login idle-timeout',
             'check_arista': 'exec-timeout',
+            'check_fortinet': 'set admintimeout',
+            'check_paloalto': 'set deviceconfig system idle-timeout',
+            'check_huawei': 'idle-timeout',
             'severity': 'LOW',
             'nist_control': 'NIST SP 800-53 AC-12',
             'cis_benchmark': 'CIS 1.4',
             'remediation_cisco': 'exec-timeout 10 0',
             'remediation_juniper': 'set system login idle-timeout 10',
-            'remediation_arista': 'exec-timeout 10 0'
+            'remediation_arista': 'exec-timeout 10 0',
+            'remediation_fortinet': 'config system global\n    set admintimeout 10\nend',
+            'remediation_paloalto': 'set deviceconfig system idle-timeout 10',
+            'remediation_huawei': 'user-interface console 0\n idle-timeout 10'
         },
         'no_ip_source_route': {
             'description': 'IP source routing must be disabled',
@@ -189,12 +267,18 @@ class Config:
             'check_cisco': 'no ip source-route',
             'check_juniper': 'set system no-source-route',
             'check_arista': 'no ip source-route',
+            'check_fortinet': 'set source-route disable',
+            'check_paloalto': 'set deviceconfig system source-route no',
+            'check_huawei': 'undo ip source-route',
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 SC-7',
             'cis_benchmark': 'CIS 3.2',
             'remediation_cisco': 'no ip source-route',
             'remediation_juniper': 'set system no-source-route',
-            'remediation_arista': 'no ip source-route'
+            'remediation_arista': 'no ip source-route',
+            'remediation_fortinet': 'config system global\n    set source-route disable\nend',
+            'remediation_paloalto': 'set deviceconfig system source-route no',
+            'remediation_huawei': 'undo ip source-route'
         },
         'logging_configured': {
             'description': 'Logging must be sent to a remote syslog server',
@@ -202,12 +286,18 @@ class Config:
             'check_cisco': 'logging host',
             'check_juniper': 'set system syslog host',
             'check_arista': 'logging host',
+            'check_fortinet': 'set server',
+            'check_paloalto': 'set deviceconfig system logging syslog',
+            'check_huawei': 'info-center loghost',
             'severity': 'MEDIUM',
             'nist_control': 'NIST SP 800-53 AU-4',
             'cis_benchmark': 'CIS 8.2',
             'remediation_cisco': 'logging host <syslog-server-ip>',
             'remediation_juniper': 'set system syslog host <syslog-server-ip>',
-            'remediation_arista': 'logging host <syslog-server-ip>'
+            'remediation_arista': 'logging host <syslog-server-ip>',
+            'remediation_fortinet': 'config log syslogd setting\n    set status enable\n    set server <syslog-server-ip>\nend',
+            'remediation_paloalto': 'set deviceconfig system logging syslog <syslog-server-ip>',
+            'remediation_huawei': 'info-center loghost <syslog-server-ip>'
         },
         'no_aux_port': {
             'description': 'Auxiliary port must be disabled',
@@ -215,12 +305,18 @@ class Config:
             'check_cisco': ['line aux 0', 'line aux 1'],
             'check_juniper': [],
             'check_arista': ['line aux 0'],
+            'check_fortinet': ['set console enable'],
+            'check_paloalto': ['set deviceconfig system console enable yes'],
+            'check_huawei': ['user-interface aux 0'],
             'severity': 'LOW',
             'nist_control': 'NIST SP 800-53 AC-17',
             'cis_benchmark': 'CIS 1.6',
             'remediation_cisco': 'line aux 0\n no exec\n transport input none',
             'remediation_juniper': 'N/A - no aux port on Junos',
-            'remediation_arista': 'line aux 0\n no exec'
+            'remediation_arista': 'line aux 0\n no exec',
+            'remediation_fortinet': 'config system console\n    set console disable\nend',
+            'remediation_paloalto': 'set deviceconfig system console enable no',
+            'remediation_huawei': 'user-interface aux 0\n undo enable'
         },
         'enable_secret_encrypted': {
             'description': 'Enable secret must be encrypted (type 5 or higher)',
@@ -228,12 +324,18 @@ class Config:
             'check_cisco': 'enable secret 5',
             'check_juniper': 'set system root-authentication encrypted-password',
             'check_arista': 'enable secret 5',
+            'check_fortinet': 'set password-encryption',
+            'check_paloalto': 'set mgt-config users admin phash',
+            'check_huawei': 'password cipher',
             'severity': 'HIGH',
             'nist_control': 'NIST SP 800-53 IA-5',
             'cis_benchmark': 'CIS 1.1.1',
             'remediation_cisco': 'enable secret <strong-password>',
             'remediation_juniper': 'set system root-authentication encrypted-password <hash>',
-            'remediation_arista': 'enable secret <strong-password>'
+            'remediation_arista': 'enable secret <strong-password>',
+            'remediation_fortinet': 'config system global\n    set password-encryption enable\nend',
+            'remediation_paloalto': 'set mgt-config users admin phash <hash>',
+            'remediation_huawei': 'password cipher <password>'
         },
         'service_timestamps': {
             'description': 'Timestamps must be enabled for logging',
@@ -241,11 +343,17 @@ class Config:
             'check_cisco': 'service timestamps',
             'check_juniper': 'set system syslog time-format',
             'check_arista': 'service timestamps',
+            'check_fortinet': 'set log-timestamp',
+            'check_paloalto': 'set deviceconfig system logging timestamp',
+            'check_huawei': 'info-center timestamp',
             'severity': 'LOW',
             'nist_control': 'NIST SP 800-53 AU-8',
             'cis_benchmark': 'CIS 8.1',
             'remediation_cisco': 'service timestamps log datetime msec',
             'remediation_juniper': 'set system syslog time-format',
-            'remediation_arista': 'service timestamps log datetime msec'
+            'remediation_arista': 'service timestamps log datetime msec',
+            'remediation_fortinet': 'config system global\n    set log-timestamp enable\nend',
+            'remediation_paloalto': 'set deviceconfig system logging timestamp enabled yes',
+            'remediation_huawei': 'info-center timestamp { date | short-date | format-date | boot }'
         }
     }
