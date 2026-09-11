@@ -568,7 +568,7 @@ def audit_trace(audit_id, rule):
         return jsonify({'error': 'Rule not found in this audit'}), 404
 
     return jsonify({'trace': trace})
-AQ
+
 if __name__ == '__main__':
     # Create uploads folder if it doesn't exist
     if not os.path.exists('uploads'):
