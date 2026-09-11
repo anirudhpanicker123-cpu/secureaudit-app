@@ -978,13 +978,14 @@
                     return;
                 }
 
-                const stats = data.stats;
-                document.getElementById('statNodes').textContent = stats.total_nodes;
-                document.getElementById('statEdges').textContent = stats.total_edges;
-                document.getElementById('statViolations').textContent = stats.by_type.violation || 0;
-                const nistCount = stats.by_type.nist || 0;
-                const cisCount = stats.by_type.cis || 0;
-                document.getElementById('statControls').textContent = nistCount + cisCount;
+               const stats = data.stats || {};
+const byType = stats.by_type || {};
+document.getElementById('statNodes').textContent = stats.total_nodes || 0;
+document.getElementById('statEdges').textContent = stats.total_edges || 0;
+document.getElementById('statViolations').textContent = byType.violation || 0;
+const nistCount = byType.nist || 0;
+const cisCount = byType.cis || 0;
+document.getElementById('statControls').textContent = nistCount + cisCount;
 
                 const elements = [];
                 data.graph.nodes.forEach(function(n) {
