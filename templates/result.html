@@ -209,7 +209,7 @@
             background: linear-gradient(145deg, #10151e, #080b10);
             overflow: hidden;
         }
-        .modal-panel.wide { width: min(1200px, 100%); }
+        .modal-panel.wide { width: min(1280px, 100%); }
         .modal-header {
             display: flex; justify-content: space-between; align-items: flex-start;
             padding: 26px 28px 20px;
@@ -245,28 +245,13 @@
         .action-mini.primary { background: linear-gradient(135deg, #8b6cff, #6e52e8); color: white; }
         .action-mini.copied { background: linear-gradient(90deg, #39dca4, #22a97c); color: white; }
 
+        /* GRAPH */
         #cy {
-            width: 100%; height: 65vh;
+            width: 100%; height: 62vh;
             border-radius: 12px;
             background: radial-gradient(circle at 50% 50%, rgba(157,134,255,.04), transparent 60%), #05060a;
             border: 1px solid rgba(255,255,255,.06);
         }
-        .graph-legend {
-            display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px;
-            padding: 12px 16px; border-radius: 10px;
-            background: rgba(255,255,255,.02);
-            border: 1px solid var(--border);
-        }
-        .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text-soft); }
-        .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .legend-file { background: #a996ff; box-shadow: 0 0 12px rgba(169,150,255,.7); }
-        .legend-vendor { background: #6ee7ff; box-shadow: 0 0 12px rgba(110,231,255,.7); }
-        .legend-vhigh { background: #ff6575; }
-        .legend-vmedium { background: #f3bd55; }
-        .legend-vlow { background: #74b9ff; }
-        .legend-nist { background: #39dca4; }
-        .legend-cis { background: #a996ff; }
-        .legend-line { background: #697485; }
         .graph-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
         .graph-stat {
             padding: 12px 16px; border-radius: 10px;
@@ -278,6 +263,47 @@
             font-family: var(--mono); font-size: 9px;
             letter-spacing: 0.1em; color: var(--text-muted);
             text-transform: uppercase; margin-top: 4px;
+        }
+
+        /* Node type filter chips */
+        .node-filters {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 14px; padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(255,255,255,.015);
+            border: 1px solid var(--border);
+        }
+        .node-filter {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: 999px;
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 11px; font-weight: 500;
+            cursor: pointer; user-select: none;
+            transition: all .2s ease;
+            font-family: var(--sans);
+        }
+        .node-filter:hover { color: var(--text); border-color: rgba(157,134,255,.3); }
+        .node-filter.active {
+            color: white;
+            background: rgba(157,134,255,.12);
+            border-color: rgba(157,134,255,.4);
+            box-shadow: 0 4px 15px rgba(157,134,255,.1);
+        }
+        .node-filter .nf-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .node-filter .nf-count {
+            font-family: var(--mono); font-size: 9px;
+            padding: 2px 6px; border-radius: 999px;
+            background: rgba(255,255,255,.06);
+            color: var(--text-muted);
+        }
+        .node-filter.active .nf-count {
+            background: rgba(255,255,255,.15);
+            color: white;
         }
 
         .chat-wrap {
@@ -616,13 +642,13 @@
                     <div class="section-kicker">RELATIONSHIP VISUALIZATION</div>
                     <h2>Compliance Knowledge Graph</h2>
                     <p style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
-                        Interactive graph linking vendor → violations → NIST/CIS controls. Drag nodes to rearrange.
+                        Toggle node types below to reduce clutter. Click any node to highlight its relationships.
                     </p>
                 </div>
                 <button type="button" class="modal-close" onclick="closeGraph()">✕</button>
             </div>
             <div class="modal-body">
-                <div class="graph-stats" id="graphStats">
+                <div class="graph-stats">
                     <div class="graph-stat">
                         <div class="graph-stat-num" id="statNodes">—</div>
                         <div class="graph-stat-lbl">Total Nodes</div>
@@ -641,15 +667,32 @@
                     </div>
                 </div>
 
-                <div class="graph-legend">
-                    <div class="legend-item"><span class="legend-dot legend-file"></span> File</div>
-                    <div class="legend-item"><span class="legend-dot legend-vendor"></span> Vendor</div>
-                    <div class="legend-item"><span class="legend-dot legend-vhigh"></span> HIGH</div>
-                    <div class="legend-item"><span class="legend-dot legend-vmedium"></span> MEDIUM</div>
-                    <div class="legend-item"><span class="legend-dot legend-vlow"></span> LOW</div>
-                    <div class="legend-item"><span class="legend-dot legend-nist"></span> NIST Control</div>
-                    <div class="legend-item"><span class="legend-dot legend-cis"></span> CIS Benchmark</div>
-                    <div class="legend-item"><span class="legend-dot legend-line"></span> Config Line</div>
+                <!-- Node type filters -->
+                <div class="node-filters" id="nodeFilters">
+                    <button type="button" class="node-filter active" data-type="file">
+                        <span class="nf-dot" style="background:#a996ff; color:#a996ff;"></span>
+                        File <span class="nf-count" data-count="file">0</span>
+                    </button>
+                    <button type="button" class="node-filter active" data-type="vendor">
+                        <span class="nf-dot" style="background:#6ee7ff; color:#6ee7ff;"></span>
+                        Vendor <span class="nf-count" data-count="vendor">0</span>
+                    </button>
+                    <button type="button" class="node-filter active" data-type="violation">
+                        <span class="nf-dot" style="background:#ff6575; color:#ff6575;"></span>
+                        Violations <span class="nf-count" data-count="violation">0</span>
+                    </button>
+                    <button type="button" class="node-filter active" data-type="nist">
+                        <span class="nf-dot" style="background:#39dca4; color:#39dca4;"></span>
+                        NIST <span class="nf-count" data-count="nist">0</span>
+                    </button>
+                    <button type="button" class="node-filter active" data-type="cis">
+                        <span class="nf-dot" style="background:#c1b5ff; color:#c1b5ff;"></span>
+                        CIS <span class="nf-count" data-count="cis">0</span>
+                    </button>
+                    <button type="button" class="node-filter" data-type="line">
+                        <span class="nf-dot" style="background:#697485; color:#697485;"></span>
+                        Config Lines <span class="nf-count" data-count="line">0</span>
+                    </button>
                 </div>
 
                 <div id="cy"></div>
@@ -866,10 +909,12 @@
 
     <script>
         // ============================================
-        // KNOWLEDGE GRAPH — with COSE layout
+        // KNOWLEDGE GRAPH — with node type filters
         // ============================================
         let cyInstance = null;
+        let allElements = [];
         const auditIdForGraph = {{ results.id or 0 }};
+        const visibleTypes = { file: true, vendor: true, violation: true, nist: true, cis: true, line: false };
 
         const nodeColors = {
             file: { bg: '#a996ff', border: '#8b6cff' },
@@ -894,6 +939,27 @@
             return e || {};
         }
 
+        function getCyLayout() {
+            return {
+                name: 'cose',
+                animate: true,
+                animationDuration: 800,
+                padding: 50,
+                nodeOverlap: 30,
+                idealEdgeLength: 120,
+                edgeElasticity: 100,
+                nestingFactor: 5,
+                gravity: 60,
+                numIter: 1000,
+                initialTemp: 200,
+                coolingFactor: 0.95,
+                minTemp: 1.0,
+                randomize: true,
+                componentSpacing: 120,
+                nodeRepulsion: function() { return 800000; }
+            };
+        }
+
         async function openGraph() {
             if (!auditIdForGraph) { alert('This audit is not saved.'); return; }
             document.getElementById('graphModal').classList.add('open');
@@ -915,30 +981,35 @@
 
                 const stats = data.stats || {};
                 const byType = stats.by_type || {};
-
-                let violations = byType.violation || 0;
-                let nistCount = byType.nist || 0;
-                let cisCount = byType.cis || 0;
-
                 const nodesList = data.graph.nodes || [];
                 const edgesList = data.graph.edges || [];
 
-                if (violations === 0 && nistCount === 0 && cisCount === 0) {
-                    nodesList.forEach(function(n) {
-                        const nd = getNodeData(n);
-                        if (nd.type === 'violation') violations++;
-                        if (nd.type === 'nist') nistCount++;
-                        if (nd.type === 'cis') cisCount++;
-                    });
-                }
+                // Count by type
+                const typeCounts = { file: 0, vendor: 0, violation: 0, nist: 0, cis: 0, line: 0 };
+                nodesList.forEach(function(n) {
+                    const nd = getNodeData(n);
+                    const t = nd.type || 'default';
+                    if (typeCounts[t] !== undefined) typeCounts[t]++;
+                });
+
+                // Update stat cards
+                const violations = typeCounts.violation;
+                const nistCount = typeCounts.nist;
+                const cisCount = typeCounts.cis;
 
                 document.getElementById('statNodes').textContent = stats.total_nodes || nodesList.length || 0;
                 document.getElementById('statEdges').textContent = stats.total_edges || edgesList.length || 0;
                 document.getElementById('statViolations').textContent = violations;
                 document.getElementById('statControls').textContent = nistCount + cisCount;
 
-                const elements = [];
+                // Update filter counts
+                document.querySelectorAll('.nf-count').forEach(function(el) {
+                    const t = el.getAttribute('data-count');
+                    el.textContent = typeCounts[t] || 0;
+                });
 
+                // Build all elements
+                allElements = [];
                 nodesList.forEach(function(n) {
                     const nd = getNodeData(n);
                     const type = nd.type || 'default';
@@ -947,7 +1018,7 @@
                     if (type === 'violation') colors = getViolationColor(severity);
                     else colors = nodeColors[type] || { bg: '#697485', border: '#4a5568' };
 
-                    elements.push({
+                    allElements.push({
                         data: {
                             id: String(nd.id || ('node_' + Math.random().toString(36).slice(2))),
                             label: String(nd.label || nd.id || ''),
@@ -966,7 +1037,7 @@
                     const src = ed.source || '';
                     const dst = ed.target || '';
                     if (!src || !dst) return;
-                    elements.push({
+                    allElements.push({
                         data: {
                             id: String(ed.id || (src + '->' + dst)),
                             source: String(src),
@@ -976,30 +1047,33 @@
                     });
                 });
 
-                if (elements.length === 0) {
+                if (allElements.length === 0) {
                     document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#666;">Graph is empty.</div>';
                     return;
                 }
 
+                // Filter elements based on visibleTypes
+                const visibleElements = filterElements();
+
                 cyInstance = cytoscape({
                     container: document.getElementById('cy'),
-                    elements: elements,
+                    elements: visibleElements,
                     style: [
                         { selector: 'node', style: {
                             'label': 'data(label)', 'color': '#f5f7fb',
-                            'font-size': '10px', 'font-family': 'Inter, sans-serif',
+                            'font-size': '11px', 'font-family': 'Inter, sans-serif',
                             'font-weight': 600, 'text-valign': 'bottom',
                             'text-halign': 'center', 'text-margin-y': 8,
                             'background-color': 'data(bg)',
                             'border-width': 2, 'border-color': 'data(border)',
-                            'width': 22, 'height': 22,
-                            'text-wrap': 'wrap', 'text-max-width': 120,
-                            'text-outline-color': '#06080c', 'text-outline-width': 2
+                            'width': 24, 'height': 24,
+                            'text-wrap': 'wrap', 'text-max-width': 130,
+                            'text-outline-color': '#06080c', 'text-outline-width': 2.5
                         }},
-                        { selector: 'node[type="file"]', style: { 'width': 46, 'height': 46, 'font-size': '13px', 'font-weight': 700 }},
-                        { selector: 'node[type="vendor"]', style: { 'width': 38, 'height': 38, 'font-size': '12px', 'font-weight': 700 }},
-                        { selector: 'node[type="violation"]', style: { 'width': 28, 'height': 28 }},
-                        { selector: 'node[type="nist"], node[type="cis"]', style: { 'width': 26, 'height': 26, 'font-size': '9px' }},
+                        { selector: 'node[type="file"]', style: { 'width': 50, 'height': 50, 'font-size': '13px', 'font-weight': 700 }},
+                        { selector: 'node[type="vendor"]', style: { 'width': 42, 'height': 42, 'font-size': '12px', 'font-weight': 700 }},
+                        { selector: 'node[type="violation"]', style: { 'width': 32, 'height': 32, 'font-size': '11px' }},
+                        { selector: 'node[type="nist"], node[type="cis"]', style: { 'width': 28, 'height': 28, 'font-size': '10px' }},
                         { selector: 'node[type="line"]', style: { 'width': 18, 'height': 18, 'font-size': '9px' }},
                         { selector: 'edge', style: {
                             'width': 1.5, 'line-color': 'rgba(157,134,255,.25)',
@@ -1009,39 +1083,78 @@
                         { selector: 'edge[relation="violates"]', style: { 'line-color': 'rgba(255,101,117,.3)', 'target-arrow-color': 'rgba(255,101,117,.6)' }},
                         { selector: 'edge[relation="detected_as"]', style: { 'line-color': 'rgba(110,231,255,.4)', 'target-arrow-color': 'rgba(110,231,255,.7)', 'width': 2 }},
                         { selector: 'edge[relation="produced"]', style: { 'line-color': 'rgba(255,101,117,.2)', 'target-arrow-color': 'rgba(255,101,117,.5)' }},
-                        { selector: ':selected', style: { 'border-width': 4, 'border-color': '#ffffff' }}
+                        { selector: ':selected', style: { 'border-width': 4, 'border-color': '#ffffff' }},
+                        { selector: '.faded', style: { 'opacity': 0.15 }},
+                        { selector: '.highlighted', style: { 'border-width': 3, 'border-color': '#a996ff' }}
                     ],
-                    layout: {
-                        name: 'cose',
-                        animate: true,
-                        animationDuration: 900,
-                        padding: 40,
-                        nodeOverlap: 20,
-                        idealEdgeLength: 80,
-                        edgeElasticity: 100,
-                        nestingFactor: 5,
-                        gravity: 80,
-                        numIter: 1000,
-                        initialTemp: 200,
-                        coolingFactor: 0.95,
-                        minTemp: 1.0,
-                        randomize: true,
-                        componentSpacing: 100,
-                        nodeRepulsion: function() { return 400000; }
-                    },
+                    layout: getCyLayout(),
                     wheelSensitivity: 0.2, minZoom: 0.3, maxZoom: 3
                 });
 
-                // Fit view after layout finishes
+                // Click-to-highlight
+                cyInstance.on('tap', 'node', function(evt) {
+                    const node = evt.target;
+                    cyInstance.elements().removeClass('faded highlighted');
+
+                    const neighborhood = node.closedNeighborhood();
+                    cyInstance.elements().not(neighborhood).addClass('faded');
+                    neighborhood.addClass('highlighted');
+                });
+
+                cyInstance.on('tap', function(evt) {
+                    if (evt.target === cyInstance) {
+                        cyInstance.elements().removeClass('faded highlighted');
+                    }
+                });
+
+                // Fit view
                 cyInstance.ready(function() {
                     setTimeout(function() {
-                        cyInstance.fit(undefined, 40);
-                    }, 1000);
+                        cyInstance.fit(undefined, 50);
+                    }, 900);
+                });
+
+                // Wire up filter buttons
+                document.querySelectorAll('.node-filter').forEach(function(btn) {
+                    btn.onclick = function() {
+                        const type = btn.getAttribute('data-type');
+                        visibleTypes[type] = !visibleTypes[type];
+                        btn.classList.toggle('active', visibleTypes[type]);
+                        rebuildGraph();
+                    };
                 });
             } catch (err) {
                 console.error('Graph error:', err);
                 document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#ff6575;">Failed to load graph: ' + err.message + '</div>';
             }
+        }
+
+        function filterElements() {
+            // Determine which nodes are visible
+            const visibleNodeIds = new Set();
+            allElements.forEach(function(el) {
+                if (el.data.source) return; // skip edges
+                const t = el.data.type;
+                if (visibleTypes[t]) visibleNodeIds.add(el.data.id);
+            });
+
+            // Keep only visible nodes and edges whose endpoints are both visible
+            return allElements.filter(function(el) {
+                if (el.data.source) {
+                    return visibleNodeIds.has(el.data.source) && visibleNodeIds.has(el.data.target);
+                }
+                return visibleNodeIds.has(el.data.id);
+            });
+        }
+
+        function rebuildGraph() {
+            if (!cyInstance) return;
+            cyInstance.elements().remove();
+            cyInstance.add(filterElements());
+            cyInstance.layout(getCyLayout()).run();
+            setTimeout(function() {
+                cyInstance.fit(undefined, 50);
+            }, 900);
         }
 
         function closeGraph() {
@@ -1050,18 +1163,11 @@
 
         function resetGraphLayout() {
             if (!cyInstance) return;
-            cyInstance.layout({
-                name: 'cose',
-                animate: true,
-                animationDuration: 700,
-                padding: 40,
-                idealEdgeLength: 80,
-                nodeRepulsion: function() { return 400000; },
-                randomize: true
-            }).run();
+            cyInstance.elements().removeClass('faded highlighted');
+            cyInstance.layout(getCyLayout()).run();
             setTimeout(function() {
-                cyInstance.fit(undefined, 40);
-            }, 800);
+                cyInstance.fit(undefined, 50);
+            }, 900);
         }
 
         document.addEventListener('keydown', function(e) {
