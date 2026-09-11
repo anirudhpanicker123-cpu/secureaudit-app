@@ -1,15 +1,22 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, jsonify
+from flask import Flask, request, render_template, redirect, url_for, flash, jsonify, session, send_file
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import os
 import json
 import zipfile
 from datetime import datetime
 import groq
+from pdf_export import AuditPDF
+from flask import send_file
+from io import BytesIO
 
 from config import Config
 from parser import ConfigParser
 from compliance_engine import ComplianceEngine
-from database import init_db, save_audit, get_all_audits, get_audit_by_id, delete_audit, save_chat_message, get_chat_history
+from database import (init_db, create_user, get_user_by_email, get_user_by_id,
+                     save_audit, get_all_audits, get_audit_by_id, delete_audit,
+                     save_chat_message, get_chat_history)
 from knowledge_graph import ComplianceKnowledgeGraph
 
 app = Flask(__name__)
@@ -19,11 +26,36 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 init_db()
 
 # ============================================================
-# Groq client — KEY FIX: max_retries=0 prevents the OOM crash
-# The retry loop was sleeping + retrying, exhausting memory.
-# With max_retries=0, failures return immediately and we fall
-# back to the next model FAST instead of hanging.
+# Authentication Setup
 # ============================================================
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'info'
+
+
+class User(UserMixin):
+    def __init__(self, user_dict):
+        self.id = str(user_dict['id'])
+        self.email = user_dict['email']
+        self.username = user_dict.get('username', '')
+        self.profile_pic = user_dict.get('profile_pic', '')
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    user_dict = get_user_by_id(int(user_id))
+    if user_dict:
+        return User(user_dict)
+    return None
+
+
+# ============================================================
+# Groq AI Setup
+# ============================================================
+
 try:
     client = groq.Groq(
         api_key=app.config['GROQ_API_KEY'],
@@ -38,12 +70,12 @@ except Exception as e:
     print("Groq API not configured. AI features disabled. Error: " + str(e))
 
 
-# Models in priority order — fastest first, fallback to stronger ones
-AI_MODELS = [
-    "openai/gpt-oss-120b",
-    "openai/gpt-oss-20b"
-]
+AI_MODELS = ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
 
+
+# ============================================================
+# Helper Functions
+# ============================================================
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -53,7 +85,6 @@ def call_ai(messages, temperature=0.4, max_tokens=500):
     """Try each model in order. Returns None if all fail."""
     if not ai_enabled:
         return None
-
     for model_name in AI_MODELS:
         try:
             response = client.chat.completions.create(
@@ -66,12 +97,11 @@ def call_ai(messages, temperature=0.4, max_tokens=500):
         except Exception as e:
             print("Model " + model_name + " failed: " + str(e)[:120])
             continue
-
     return None
 
 
 def get_ai_explanation(violation):
-    """Full-quality AI explanation — for EVERY violation."""
+    """Full-quality AI explanation for every violation."""
     if not ai_enabled:
         return "AI explanation unavailable."
 
@@ -121,16 +151,87 @@ RULES:
 
     if not result:
         return "AI explanation temporarily unavailable. All models are rate-limited or unreachable."
-
     return result
 
 
+# ============================================================
+# Authentication Routes
+# ============================================================
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        if not email or not password:
+            flash('Email and password are required.', 'error')
+            return redirect(url_for('register'))
+
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'error')
+            return redirect(url_for('register'))
+
+        if get_user_by_email(email):
+            flash('An account with this email already exists.', 'error')
+            return redirect(url_for('register'))
+
+        password_hash = generate_password_hash(password)
+        user_id = create_user(email=email, username=username or email.split('@')[0], password_hash=password_hash)
+        user_dict = get_user_by_id(user_id)
+        login_user(User(user_dict))
+        flash('Account created successfully! Welcome.', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+
+        user_dict = get_user_by_email(email)
+        if user_dict and user_dict.get('password_hash') and check_password_hash(user_dict['password_hash'], password):
+            login_user(User(user_dict))
+            flash('Welcome back!', 'success')
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('index'))
+
+        flash('Invalid email or password.', 'error')
+        return redirect(url_for('login'))
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
+
+
+# ============================================================
+# Main App Routes (all protected with @login_required)
+# ============================================================
+
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 
 @app.route('/upload', methods=['POST'])
+@login_required
 def upload_file():
     if 'file' not in request.files:
         flash('No file selected')
@@ -158,7 +259,7 @@ def upload_file():
         violations, passed = engine.run_checks()
         score = engine.get_compliance_score()
 
-        # Generate AI explanations for EVERY violation
+        # Generate AI explanations for every violation
         for violation in violations:
             violation['ai_explanation'] = get_ai_explanation(violation)
 
@@ -175,7 +276,7 @@ def upload_file():
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
-        audit_id = save_audit(results)
+        audit_id = save_audit(results, current_user.id)
         results['id'] = audit_id
 
         return render_template('result.html', results=results)
@@ -185,6 +286,7 @@ def upload_file():
 
 
 @app.route('/upload-batch', methods=['POST'])
+@login_required
 def upload_batch():
     """Handle ZIP file with multiple config files"""
     if 'file' not in request.files:
@@ -255,7 +357,7 @@ def upload_batch():
             violations, passed = engine.run_checks()
             score = engine.get_compliance_score()
 
-            # Generate AI explanations for ALL violations (batch too)
+            # Generate AI explanations for ALL violations
             for v in violations:
                 v['ai_explanation'] = get_ai_explanation(v)
 
@@ -272,7 +374,7 @@ def upload_batch():
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
 
-            audit_id = save_audit(results)
+            audit_id = save_audit(results, current_user.id)
             results['id'] = audit_id
             batch_results.append(results)
 
@@ -316,8 +418,9 @@ def upload_batch():
 
 
 @app.route('/api/audit', methods=['POST'])
+@login_required
 def api_audit():
-    """REST API endpoint"""
+    """REST API endpoint for programmatic access"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
 
@@ -346,38 +449,46 @@ def api_audit():
 
 
 @app.route('/history')
+@login_required
 def history():
-    audits = get_all_audits()
+    """Show all past audits for the current user"""
+    audits = get_all_audits(current_user.id)
     return render_template('history.html', audits=audits)
 
 
 @app.route('/audit/<int:audit_id>')
+@login_required
 def view_audit(audit_id):
-    audit = get_audit_by_id(audit_id)
+    """View a specific audit — only if it belongs to the current user"""
+    audit = get_audit_by_id(audit_id, current_user.id)
     if not audit:
-        flash('Audit not found')
+        flash('Audit not found or access denied.')
         return redirect(url_for('history'))
+
     chat_history = get_chat_history(audit_id)
     return render_template('result.html', results=audit, chat_history=chat_history)
 
 
 @app.route('/audit/<int:audit_id>/delete', methods=['POST'])
+@login_required
 def delete_audit_route(audit_id):
-    delete_audit(audit_id)
+    """Delete an audit — only if it belongs to the current user"""
+    delete_audit(audit_id, current_user.id)
     flash('Audit deleted successfully')
     return redirect(url_for('history'))
 
 
 @app.route('/audit/<int:audit_id>/chat', methods=['POST'])
+@login_required
 def chat_with_ai(audit_id):
-    """AI Chat — multi-model fallback, full quality"""
+    """AI Chat Assistant"""
     data = request.get_json()
     user_message = data.get('message', '').strip()
 
     if not user_message:
         return jsonify({'error': 'Message cannot be empty'}), 400
 
-    audit = get_audit_by_id(audit_id)
+    audit = get_audit_by_id(audit_id, current_user.id)
     if not audit:
         return jsonify({'error': 'Audit not found'}), 404
 
@@ -428,8 +539,10 @@ Answer the user's question clearly and concisely. If they ask for commands, prov
 
 
 @app.route('/audit/<int:audit_id>/fix-script')
+@login_required
 def generate_fix_script(audit_id):
-    audit = get_audit_by_id(audit_id)
+    """Generate a single remediation script for all violations"""
+    audit = get_audit_by_id(audit_id, current_user.id)
     if not audit:
         flash('Audit not found')
         return redirect(url_for('history'))
@@ -488,10 +601,13 @@ def generate_fix_script(audit_id):
 
 
 @app.route('/audit/<int:audit_id>/graph')
+@login_required
 def knowledge_graph_route(audit_id):
-    audit = get_audit_by_id(audit_id)
+    """Return the knowledge graph for an audit as JSON"""
+    audit = get_audit_by_id(audit_id, current_user.id)
     if not audit:
         return jsonify({'error': 'Audit not found'}), 404
+
     try:
         kg = ComplianceKnowledgeGraph(audit)
         kg.build()
@@ -504,6 +620,33 @@ def knowledge_graph_route(audit_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/audit/<int:audit_id>/pdf')
+@login_required
+def download_pdf(audit_id):
+    """Generate and download a PDF report for this audit"""
+    audit = get_audit_by_id(audit_id, current_user.id)
+    if not audit:
+        flash('Audit not found or access denied.')
+        return redirect(url_for('history'))
+
+    try:
+        pdf_gen = AuditPDF(audit)
+        pdf_bytes = pdf_gen.build()
+
+        # Friendly filename
+        safe_name = (audit.get('filename', 'audit') or 'audit').replace(' ', '_')
+        pdf_filename = 'SecureAudit_Report_' + safe_name + '.pdf'
+
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=pdf_filename
+        )
+    except Exception as e:
+        print('PDF generation error: ' + str(e))
+        flash('Could not generate PDF: ' + str(e))
+        return redirect(url_for('view_audit', audit_id=audit_id))
 if __name__ == '__main__':
     print("Starting Network Compliance Auditor...")
     app.run(debug=True, host='0.0.0.0', port=5000)

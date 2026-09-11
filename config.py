@@ -5,14 +5,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-12345'
+    # Flask-Login uses SECRET_KEY to sign session cookies
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-very-secret-key-change-me'
+    
     UPLOAD_FOLDER = 'uploads'
     ALLOWED_EXTENSIONS = {'txt', 'conf', 'cfg', 'config'}
     ALLOWED_ZIP = {'zip'}
-    MAX_CONTENT_LENGTH = 100 * 1024 * 1024
-
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB
+    
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY') or 'your-groq-api-key-here'
-
+    
+    # Google OAuth Credentials
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+    
     COMPLIANCE_RULES = {
         'enable_secret': {
             'description': 'Enable secret password must be set',

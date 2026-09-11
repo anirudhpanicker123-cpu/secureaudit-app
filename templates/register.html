@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up — SecureAudit</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--sans, 'Inter', sans-serif);
+            background: #06080c;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #f5f7fb;
+        }
+        .auth-card {
+            width: min(440px, 100%);
+            padding: 44px 40px;
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 22px;
+            background: linear-gradient(145deg, #10151e, #080b10);
+            box-shadow: 0 40px 100px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03);
+        }
+        .brand-mark {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            margin-bottom: 30px;
+        }
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(169,150,255,.25);
+            border-radius: 10px;
+            background: linear-gradient(145deg, rgba(139,108,255,.15), rgba(139,108,255,.03));
+            color: #a996ff;
+        }
+        .brand-icon svg { width: 20px; height: 20px; }
+        .brand-text {
+            font-family: 'Inter Tight', sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -.5px;
+        }
+        .brand-text span { color: #a996ff; }
+
+        .auth-card h1 {
+            font-family: 'Inter Tight', sans-serif;
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+        .auth-card > p {
+            color: #697485;
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        .flash {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .flash.error { background: rgba(255,101,117,.1); color: #ff8d9e; border: 1px solid rgba(255,101,117,.25); }
+        .flash.success { background: rgba(57,220,164,.08); color: #39dca4; border: 1px solid rgba(57,220,164,.22); }
+        .flash.info { background: rgba(157,134,255,.08); color: #a996ff; border: 1px solid rgba(157,134,255,.22); }
+
+        .auth-field { margin-bottom: 18px; }
+        .auth-field label {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #697485;
+            margin-bottom: 8px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .auth-field input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255,255,255,.03);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 10px;
+            color: #f5f7fb;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color .2s, background .2s;
+        }
+        .auth-field input:focus {
+            border-color: rgba(157,134,255,.5);
+            background: rgba(255,255,255,.05);
+        }
+        .auth-hint {
+            font-size: 11px;
+            color: #4f586a;
+            margin-top: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 15px;
+            border: 0;
+            border-radius: 11px;
+            background: linear-gradient(135deg, #8b6cff, #6e52e8);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 8px;
+            box-shadow: 0 15px 40px rgba(111,82,232,.22);
+            transition: transform .2s, filter .2s;
+        }
+        .auth-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.08);
+        }
+
+        .auth-footer {
+            margin-top: 26px;
+            text-align: center;
+            font-size: 13px;
+            color: #697485;
+        }
+        .auth-footer a {
+            color: #a996ff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="brand-mark">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z"/>
+                </svg>
+            </div>
+            <div class="brand-text">Secure<span>Audit</span></div>
+        </div>
+
+        <h1>Create account</h1>
+        <p>Start auditing network configs in seconds</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="auth-field">
+                <label>Email</label>
+                <input type="email" name="email" required autofocus autocomplete="email">
+            </div>
+            <div class="auth-field">
+                <label>Username (optional)</label>
+                <input type="text" name="username" autocomplete="username">
+            </div>
+            <div class="auth-field">
+                <label>Password</label>
+                <input type="password" name="password" required minlength="6" autocomplete="new-password">
+                <div class="auth-hint">Minimum 6 characters</div>
+            </div>
+            <button type="submit" class="auth-btn">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="{{ url_for('login') }}">Sign in</a>
+        </div>
+    </div>
+</body>
+</html>
