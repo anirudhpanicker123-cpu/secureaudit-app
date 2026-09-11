@@ -6,6 +6,12 @@
     <title>Audit Report — SecureAudit</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+    <script>
+        // Fallback CDN if primary fails
+        if (typeof cytoscape === 'undefined') {
+            document.write('<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"><\/script>');
+        }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -78,10 +84,7 @@
             font-size: 12px; font-weight: 500;
         }
 
-        /* ============================================================ */
-        /* KNOWLEDGE GRAPH TRACE — Premium Collapsible Section           */
-        /* ============================================================ */
-
+        /* KNOWLEDGE GRAPH TRACE — Premium Collapsible */
         .kg-trace-wrap {
             margin-top: 20px;
             border: 1px solid rgba(157,134,255,.12);
@@ -121,20 +124,14 @@
             flex-wrap: wrap;
         }
         .kg-trace-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
+            width: 8px; height: 8px; border-radius: 50%;
             background: linear-gradient(135deg, #a996ff, #ff6ec7);
             box-shadow: 0 0 12px rgba(169,150,255,.7), 0 0 4px rgba(255,110,199,.6);
-            position: relative;
-            flex-shrink: 0;
+            position: relative; flex-shrink: 0;
         }
         .kg-trace-dot::after {
-            content: "";
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 1px solid rgba(169,150,255,.35);
+            content: ""; position: absolute; inset: -4px;
+            border-radius: 50%; border: 1px solid rgba(169,150,255,.35);
             animation: kgPulse 2s ease-in-out infinite;
         }
         @keyframes kgPulse {
@@ -143,10 +140,8 @@
         }
         .kg-trace-title {
             font-family: var(--display);
-            font-size: 14px;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
+            font-size: 14px; font-weight: 800;
+            letter-spacing: 0.06em; text-transform: uppercase;
             background: linear-gradient(135deg, #f5f7fb 0%, #b8aaff 100%);
             -webkit-background-clip: text;
             background-clip: text;
@@ -154,34 +149,23 @@
             color: var(--text);
         }
         .kg-trace-subtitle {
-            font-family: var(--mono);
-            font-size: 10px;
+            font-family: var(--mono); font-size: 10px;
             color: var(--text-muted);
-            letter-spacing: 0.04em;
-            font-weight: 500;
+            letter-spacing: 0.04em; font-weight: 500;
         }
-        .kg-trace-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .kg-trace-meta { display: flex; align-items: center; gap: 12px; }
         .kg-trace-steps {
-            font-family: var(--mono);
-            font-size: 9px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+            font-family: var(--mono); font-size: 9px;
+            letter-spacing: 0.12em; text-transform: uppercase;
             color: var(--accent-light);
-            padding: 4px 10px;
-            border-radius: 999px;
+            padding: 4px 10px; border-radius: 999px;
             background: rgba(157,134,255,.08);
             border: 1px solid rgba(157,134,255,.18);
             font-weight: 600;
         }
         .kg-trace-chevron {
-            width: 24px;
-            height: 24px;
-            display: grid;
-            place-items: center;
+            width: 24px; height: 24px;
+            display: grid; place-items: center;
             border-radius: 7px;
             background: rgba(157,134,255,.08);
             border: 1px solid rgba(157,134,255,.18);
@@ -195,8 +179,7 @@
             background: rgba(157,134,255,.18);
         }
         .kg-trace-body {
-            display: grid;
-            grid-template-rows: 0fr;
+            display: grid; grid-template-rows: 0fr;
             transition: grid-template-rows .35s cubic-bezier(.2,.75,.2,1);
         }
         .kg-trace-wrap.open .kg-trace-body {
@@ -206,28 +189,19 @@
         .kg-trace-content {
             padding: 6px 20px 20px 20px;
             border-top: 1px solid rgba(157,134,255,.1);
-            margin-top: 6px;
-            padding-top: 18px;
+            margin-top: 6px; padding-top: 18px;
         }
         .kg-trace-node {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            margin-bottom: 6px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; margin-bottom: 6px;
             border-radius: 9px;
             background: rgba(255,255,255,.02);
             border: 1px solid rgba(255,255,255,.06);
-            font-family: var(--mono);
-            font-size: 11px;
+            font-family: var(--mono); font-size: 11px;
         }
         .kg-trace-node .kg-node-type {
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            font-size: 9px;
-            padding: 3px 8px;
-            border-radius: 5px;
-            flex-shrink: 0;
+            font-weight: 700; letter-spacing: 0.08em; font-size: 9px;
+            padding: 3px 8px; border-radius: 5px; flex-shrink: 0;
         }
         .kg-node-type.kg-device   { background: rgba(169,150,255,.12); color: #c1b5ff; border: 1px solid rgba(169,150,255,.25); }
         .kg-node-type.kg-violation{ background: rgba(255,101,117,.12); color: #ff8d9e; border: 1px solid rgba(255,101,117,.25); }
@@ -235,17 +209,8 @@
         .kg-node-type.kg-nist     { background: rgba(57,220,164,.1);   color: #39dca4; border: 1px solid rgba(57,220,164,.22); }
         .kg-node-type.kg-cis      { background: rgba(193,181,255,.12); color: #c1b5ff; border: 1px solid rgba(193,181,255,.25); }
         .kg-node-type.kg-line     { background: rgba(243,189,85,.1);   color: #f3bd55; border: 1px solid rgba(243,189,85,.22); }
-        .kg-trace-node .kg-node-text {
-            color: var(--text-soft);
-            font-weight: 500;
-            word-break: break-all;
-        }
-        .kg-trace-arrow {
-            margin: 4px 0 4px 20px;
-            color: rgba(157,134,255,.4);
-            font-size: 14px;
-            line-height: 1;
-        }
+        .kg-trace-node .kg-node-text { color: var(--text-soft); font-weight: 500; word-break: break-all; }
+        .kg-trace-arrow { margin: 4px 0 4px 20px; color: rgba(157,134,255,.4); font-size: 14px; line-height: 1; }
 
         /* MODALS */
         .modal-overlay {
@@ -297,12 +262,8 @@
             background: rgba(255,255,255,.04); color: var(--text-soft);
             border: 1px solid var(--border);
         }
-        .action-mini.primary {
-            background: linear-gradient(135deg, #8b6cff, #6e52e8); color: white;
-        }
-        .action-mini.copied {
-            background: linear-gradient(90deg, #39dca4, #22a97c); color: white;
-        }
+        .action-mini.primary { background: linear-gradient(135deg, #8b6cff, #6e52e8); color: white; }
+        .action-mini.copied { background: linear-gradient(90deg, #39dca4, #22a97c); color: white; }
 
         /* GRAPH */
         #cy {
@@ -327,15 +288,11 @@
         .legend-nist { background: #39dca4; }
         .legend-cis { background: #a996ff; }
         .legend-line { background: #697485; }
-        .graph-stats {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-            margin-bottom: 14px;
-        }
+        .graph-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
         .graph-stat {
             padding: 12px 16px; border-radius: 10px;
             background: rgba(255,255,255,.02);
-            border: 1px solid var(--border);
-            text-align: center;
+            border: 1px solid var(--border); text-align: center;
         }
         .graph-stat-num { font-family: var(--display); font-size: 24px; font-weight: 700; }
         .graph-stat-lbl {
@@ -555,9 +512,7 @@
                                 </div>
                             </div>
 
-                            <!-- ============================================ -->
-                            <!-- KNOWLEDGE GRAPH TRACE (collapsible)          -->
-                            <!-- ============================================ -->
+                            <!-- KNOWLEDGE GRAPH TRACE (collapsible) -->
                             <div class="kg-trace-wrap">
                                 <button type="button" class="kg-trace-header">
                                     <div class="kg-trace-label">
@@ -578,47 +533,38 @@
                                 <div class="kg-trace-body">
                                     <div class="kg-trace-body-inner">
                                         <div class="kg-trace-content">
-
                                             <div class="kg-trace-node">
                                                 <span class="kg-node-type kg-device">DEVICE</span>
                                                 <span class="kg-node-text">{{ results.filename }}</span>
                                             </div>
-
                                             <div class="kg-trace-arrow">↓</div>
-
                                             <div class="kg-trace-node">
                                                 <span class="kg-node-type kg-violation">VIOLATION</span>
                                                 <span class="kg-node-text">{{ violation.description }}</span>
                                             </div>
-
                                             <div class="kg-trace-arrow">↓</div>
-
                                             <div class="kg-trace-node">
                                                 <span class="kg-node-type kg-rule">RULE</span>
                                                 <span class="kg-node-text">{{ violation.rule }}</span>
                                             </div>
-
                                             {% if violation.nist_control %}
                                             <div class="kg-trace-node">
                                                 <span class="kg-node-type kg-nist">NIST</span>
                                                 <span class="kg-node-text">{{ violation.nist_control }}</span>
                                             </div>
                                             {% endif %}
-
                                             {% if violation.cis_benchmark %}
                                             <div class="kg-trace-node">
                                                 <span class="kg-node-type kg-cis">CIS</span>
                                                 <span class="kg-node-text">{{ violation.cis_benchmark }}</span>
                                             </div>
                                             {% endif %}
-
                                             {% if violation.line_number %}
                                             <div class="kg-trace-node">
                                                 <span class="kg-node-type kg-line">LINE</span>
                                                 <span class="kg-node-text">{{ violation.line_number }}: {{ violation.line_content or 'config line' }}</span>
                                             </div>
                                             {% endif %}
-
                                         </div>
                                     </div>
                                 </div>
@@ -922,7 +868,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             initFilter();
 
-            // Render AI markdown
             document.querySelectorAll('.ai-md').forEach(function(el) {
                 const raw = el.getAttribute('data-md');
                 if (!raw) return;
@@ -933,7 +878,6 @@
                 else el.textContent = decoded;
             });
 
-            // KG Trace toggle
             document.querySelectorAll('.kg-trace-header').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const wrap = this.closest('.kg-trace-wrap');
@@ -945,7 +889,7 @@
 
     <script>
         // ============================================
-        // KNOWLEDGE GRAPH VISUALIZATION
+        // KNOWLEDGE GRAPH — Bulletproof Version
         // ============================================
         let cyInstance = null;
         const auditIdForGraph = {{ results.id or 0 }};
@@ -964,10 +908,25 @@
             return { bg: '#74b9ff', border: '#4a9ce8' };
         }
 
+        // Handles BOTH {"data": {...}} and {...} shapes
+        function getNodeData(n) {
+            if (n && n.data) return n.data;
+            return n || {};
+        }
+        function getEdgeData(e) {
+            if (e && e.data) return e.data;
+            return e || {};
+        }
+
         async function openGraph() {
             if (!auditIdForGraph) { alert('This audit is not saved.'); return; }
             document.getElementById('graphModal').classList.add('open');
             document.getElementById('cy').innerHTML = '';
+
+            if (typeof cytoscape === 'undefined') {
+                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#ff6575;">Graph library failed to load. Check your internet connection.</div>';
+                return;
+            }
 
             try {
                 const res = await fetch('/audit/' + auditIdForGraph + '/graph');
@@ -978,29 +937,74 @@
                     return;
                 }
 
-               const stats = data.stats || {};
-const byType = stats.by_type || {};
-document.getElementById('statNodes').textContent = stats.total_nodes || 0;
-document.getElementById('statEdges').textContent = stats.total_edges || 0;
-document.getElementById('statViolations').textContent = byType.violation || 0;
-const nistCount = byType.nist || 0;
-const cisCount = byType.cis || 0;
-document.getElementById('statControls').textContent = nistCount + cisCount;
+                const stats = data.stats || {};
+                const byType = stats.by_type || {};
+
+                let violations = byType.violation || 0;
+                let nistCount = byType.nist || 0;
+                let cisCount = byType.cis || 0;
+
+                const nodesList = data.graph.nodes || [];
+                const edgesList = data.graph.edges || [];
+
+                // Recount from actual nodes if stats.by_type is empty
+                if (violations === 0 && nistCount === 0 && cisCount === 0) {
+                    nodesList.forEach(function(n) {
+                        const nd = getNodeData(n);
+                        if (nd.type === 'violation') violations++;
+                        if (nd.type === 'nist') nistCount++;
+                        if (nd.type === 'cis') cisCount++;
+                    });
+                }
+
+                document.getElementById('statNodes').textContent = stats.total_nodes || nodesList.length || 0;
+                document.getElementById('statEdges').textContent = stats.total_edges || edgesList.length || 0;
+                document.getElementById('statViolations').textContent = violations;
+                document.getElementById('statControls').textContent = nistCount + cisCount;
 
                 const elements = [];
-                data.graph.nodes.forEach(function(n) {
-                    const type = n.data.type;
+
+                nodesList.forEach(function(n) {
+                    const nd = getNodeData(n);
+                    const type = nd.type || 'default';
+                    const severity = nd.severity || '';
                     let colors;
-                    if (type === 'violation') colors = getViolationColor(n.data.severity);
+                    if (type === 'violation') colors = getViolationColor(severity);
                     else colors = nodeColors[type] || { bg: '#697485', border: '#4a5568' };
+
                     elements.push({
-                        data: { id: n.data.id, label: n.data.label, type: type, severity: n.data.severity },
-                        style: { 'background-color': colors.bg, 'border-color': colors.border }
+                        data: {
+                            id: String(nd.id || ('node_' + Math.random().toString(36).slice(2))),
+                            label: String(nd.label || nd.id || ''),
+                            type: String(type),
+                            severity: String(severity)
+                        },
+                        style: {
+                            'background-color': colors.bg,
+                            'border-color': colors.border
+                        }
                     });
                 });
-                data.graph.edges.forEach(function(e) {
-                    elements.push({ data: e.data });
+
+                edgesList.forEach(function(e) {
+                    const ed = getEdgeData(e);
+                    const src = ed.source || '';
+                    const dst = ed.target || '';
+                    if (!src || !dst) return;
+                    elements.push({
+                        data: {
+                            id: String(ed.id || (src + '->' + dst)),
+                            source: String(src),
+                            target: String(dst),
+                            relation: String(ed.relation || 'related')
+                        }
+                    });
                 });
+
+                if (elements.length === 0) {
+                    document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#666;">Graph is empty.</div>';
+                    return;
+                }
 
                 cyInstance = cytoscape({
                     container: document.getElementById('cy'),
@@ -1041,7 +1045,7 @@ document.getElementById('statControls').textContent = nistCount + cisCount;
                 });
             } catch (err) {
                 console.error('Graph error:', err);
-                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#ff6575;">Failed to load graph.</div>';
+                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#ff6575;">Failed to load graph: ' + err.message + '</div>';
             }
         }
 
