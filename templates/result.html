@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Report — SecureAudit</title>
+    <title>Audit Report — TE Audits</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
     <script>
@@ -17,96 +17,100 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     <style>
-        :root {
-            --mono: "JetBrains Mono", ui-monospace, monospace;
-            --sans: "Inter", -apple-system, sans-serif;
-            --display: "Inter Tight", "Inter", sans-serif;
-        }
-
+        /* Page-specific styles — gold theme */
         .action-btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .action-btn {
             display: inline-flex; align-items: center; gap: 6px;
-            padding: 10px 18px; border-radius: 8px; color: white;
+            padding: 11px 18px; border-radius: 9px; color: white;
             font-size: 12px; font-weight: 600; cursor: pointer; border: 0;
-            box-shadow: 0 8px 25px rgba(111,82,232,.28);
-            font-family: var(--sans); transition: transform .2s ease;
-        }
-        .action-btn.primary { background: linear-gradient(135deg, #8b6cff, #6e52e8); }
-        .action-btn.graph { background: linear-gradient(135deg, #39dca4, #22a97c); box-shadow: 0 8px 25px rgba(57,220,164,.25); }
-        .action-btn.pdf {
-            background: linear-gradient(135deg, #ff6575, #e5394f);
-            box-shadow: 0 8px 25px rgba(255,101,117,.25);
+            font-family: 'Inter', sans-serif; transition: transform .2s ease;
             text-decoration: none;
         }
-        .action-btn.pdf:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(255,101,117,.35);
+        .action-btn.primary {
+            background: linear-gradient(135deg, #e4c06b, #b98325);
+            color: #211a0d;
+            box-shadow: 0 10px 25px rgba(183,132,35,.25);
+        }
+        .action-btn.graph {
+            background: linear-gradient(135deg, #2fae7a, #22855c);
+            box-shadow: 0 10px 25px rgba(38,150,106,.22);
+        }
+        .action-btn.pdf {
+            background: linear-gradient(135deg, #d9595f, #b93e45);
+            box-shadow: 0 10px 25px rgba(201,79,85,.22);
         }
         .action-btn:hover { transform: translateY(-2px); }
 
         .severity-filter-bar {
             display: flex; flex-wrap: wrap; gap: 8px;
             margin-bottom: 22px; padding: 14px 16px;
-            border: 1px solid var(--border); border-radius: 12px;
-            background: rgba(255,255,255,.012);
+            border: 1px solid rgba(70,55,25,.10); border-radius: 12px;
+            background: #ffffff;
         }
         .filter-chip {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 8px 14px; border-radius: 999px;
-            border: 1px solid var(--border); background: rgba(255,255,255,.025);
-            color: var(--text-muted); font-size: 12px; font-weight: 500;
-            cursor: pointer; font-family: var(--sans);
+            border: 1px solid rgba(70,55,25,.12); background: #ffffff;
+            color: #777167; font-size: 12px; font-weight: 500;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: all .2s ease;
         }
+        .filter-chip:hover { border-color: rgba(201,154,59,.4); color: #191815; }
         .filter-chip.active {
-            color: white; background: linear-gradient(135deg, #8b6cff, #6e52e8);
+            color: #211a0d;
+            background: linear-gradient(135deg, #e4c06b, #b98325);
             border-color: transparent;
+            box-shadow: 0 6px 18px rgba(183,132,35,.2);
         }
         .filter-count {
             display: inline-flex; align-items: center; justify-content: center;
             min-width: 22px; height: 20px; padding: 0 7px;
-            border-radius: 999px; background: rgba(255,255,255,.08);
-            font-family: var(--mono); font-size: 11px; font-weight: 600;
+            border-radius: 999px; background: rgba(0,0,0,.06);
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
         }
-        .filter-chip.active .filter-count { background: rgba(255,255,255,.22); }
+        .filter-chip.active .filter-count { background: rgba(255,255,255,.35); }
         .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
-        .dot-high { background: #ff6575; }
-        .dot-medium { background: #f3bd55; }
-        .dot-low { background: #74b9ff; }
+        .dot-high { background: #c94f55; }
+        .dot-medium { background: #b47d1e; }
+        .dot-low { background: #4a90c2; }
         .finding.hidden { display: none; }
 
-        .ai-md { color: var(--text-soft); font-size: 13px; line-height: 1.75; }
+        /* AI markdown */
+        .ai-md { color: #625d54; font-size: 13px; line-height: 1.75; }
         .ai-md h3 {
-            color: var(--accent-light); font-family: var(--display);
+            color: #a8751d; font-family: 'Inter Tight', sans-serif;
             font-size: 13px; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.08em; margin: 18px 0 10px 0;
-            padding-bottom: 6px; border-bottom: 1px solid rgba(157,134,255,.15);
+            padding-bottom: 6px; border-bottom: 1px solid rgba(201,154,59,.20);
         }
         .ai-md h3:first-child { margin-top: 0; }
         .ai-md ul, .ai-md ol { margin: 8px 0 14px 0; padding-left: 22px; }
-        .ai-md li { margin-bottom: 8px; line-height: 1.65; color: var(--text-soft); font-size: 13px; }
-        .ai-md li::marker { color: var(--accent-light); }
-        .ai-md strong { color: var(--text); font-weight: 600; }
+        .ai-md li { margin-bottom: 8px; line-height: 1.65; color: #625d54; font-size: 13px; }
+        .ai-md li::marker { color: #c99a3b; }
+        .ai-md strong { color: #191815; font-weight: 600; }
         .ai-md code {
-            background: rgba(157,134,255,.1); color: #c9baff;
-            padding: 2px 7px; border-radius: 5px; font-family: var(--mono);
+            background: rgba(201,154,59,.10); color: #9c6d19;
+            padding: 2px 7px; border-radius: 5px;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 12px; font-weight: 500;
         }
 
+        /* Knowledge Graph Trace */
         .kg-trace-wrap {
             margin-top: 20px;
-            border: 1px solid rgba(157,134,255,.12);
+            border: 1px solid rgba(201,154,59,.20);
             border-radius: 14px;
-            background: linear-gradient(145deg, rgba(157,134,255,.03), rgba(0,0,0,.15));
+            background: linear-gradient(145deg, rgba(201,154,59,.04), #ffffff);
             overflow: hidden;
             transition: border-color .25s ease, box-shadow .25s ease;
         }
         .kg-trace-wrap:hover {
-            border-color: rgba(157,134,255,.22);
-            box-shadow: 0 8px 32px rgba(111,82,232,.08);
+            border-color: rgba(201,154,59,.35);
+            box-shadow: 0 8px 32px rgba(183,132,35,.08);
         }
         .kg-trace-wrap.open {
-            border-color: rgba(157,134,255,.28);
-            box-shadow: 0 12px 42px rgba(111,82,232,.12);
+            border-color: rgba(201,154,59,.45);
+            box-shadow: 0 12px 42px rgba(183,132,35,.10);
         }
         .kg-trace-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -114,17 +118,17 @@
             transition: background .2s ease;
             width: 100%; border: 0; background: transparent; text-align: left;
         }
-        .kg-trace-header:hover { background: rgba(157,134,255,.03); }
+        .kg-trace-header:hover { background: rgba(201,154,59,.05); }
         .kg-trace-label { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .kg-trace-dot {
             width: 8px; height: 8px; border-radius: 50%;
-            background: linear-gradient(135deg, #a996ff, #ff6ec7);
-            box-shadow: 0 0 12px rgba(169,150,255,.7), 0 0 4px rgba(255,110,199,.6);
+            background: linear-gradient(135deg, #c99a3b, #9c6d19);
+            box-shadow: 0 0 12px rgba(201,154,59,.5);
             position: relative; flex-shrink: 0;
         }
         .kg-trace-dot::after {
             content: ""; position: absolute; inset: -4px;
-            border-radius: 50%; border: 1px solid rgba(169,150,255,.35);
+            border-radius: 50%; border: 1px solid rgba(201,154,59,.35);
             animation: kgPulse 2s ease-in-out infinite;
         }
         @keyframes kgPulse {
@@ -132,43 +136,39 @@
             50%      { opacity: .9; transform: scale(1.15); }
         }
         .kg-trace-title {
-            font-family: var(--display);
+            font-family: 'Inter Tight', sans-serif;
             font-size: 14px; font-weight: 800;
             letter-spacing: 0.06em; text-transform: uppercase;
-            background: linear-gradient(135deg, #f5f7fb 0%, #b8aaff 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #191815;
         }
         .kg-trace-subtitle {
-            font-family: var(--mono); font-size: 10px;
-            color: var(--text-muted);
-            letter-spacing: 0.04em; font-weight: 500;
+            font-family: 'JetBrains Mono', monospace; font-size: 10px;
+            color: #8b857a; letter-spacing: 0.04em; font-weight: 500;
         }
         .kg-trace-meta { display: flex; align-items: center; gap: 12px; }
         .kg-trace-steps {
-            font-family: var(--mono); font-size: 9px;
+            font-family: 'JetBrains Mono', monospace; font-size: 9px;
             letter-spacing: 0.12em; text-transform: uppercase;
-            color: var(--accent-light);
+            color: #9c6d19;
             padding: 4px 10px; border-radius: 999px;
-            background: rgba(157,134,255,.08);
-            border: 1px solid rgba(157,134,255,.18);
+            background: rgba(201,154,59,.10);
+            border: 1px solid rgba(201,154,59,.22);
             font-weight: 600;
         }
         .kg-trace-chevron {
             width: 24px; height: 24px;
             display: grid; place-items: center;
             border-radius: 7px;
-            background: rgba(157,134,255,.08);
-            border: 1px solid rgba(157,134,255,.18);
-            color: var(--accent-light);
+            background: rgba(201,154,59,.08);
+            border: 1px solid rgba(201,154,59,.22);
+            color: #9c6d19;
             transition: transform .3s ease, background .2s ease;
             flex-shrink: 0;
         }
         .kg-trace-chevron svg { width: 13px; height: 13px; }
         .kg-trace-wrap.open .kg-trace-chevron {
             transform: rotate(180deg);
-            background: rgba(157,134,255,.18);
+            background: rgba(201,154,59,.16);
         }
         .kg-trace-body {
             display: grid; grid-template-rows: 0fr;
@@ -178,30 +178,31 @@
         .kg-trace-body-inner { overflow: hidden; }
         .kg-trace-content {
             padding: 6px 20px 20px 20px;
-            border-top: 1px solid rgba(157,134,255,.1);
+            border-top: 1px solid rgba(201,154,59,.12);
             margin-top: 6px; padding-top: 18px;
         }
         .kg-trace-node {
             display: flex; align-items: center; gap: 10px;
             padding: 10px 14px; margin-bottom: 6px;
             border-radius: 9px;
-            background: rgba(255,255,255,.02);
-            border: 1px solid rgba(255,255,255,.06);
-            font-family: var(--mono); font-size: 11px;
+            background: #ffffff;
+            border: 1px solid rgba(70,55,25,.10);
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
         }
         .kg-trace-node .kg-node-type {
             font-weight: 700; letter-spacing: 0.08em; font-size: 9px;
             padding: 3px 8px; border-radius: 5px; flex-shrink: 0;
         }
-        .kg-node-type.kg-device   { background: rgba(169,150,255,.12); color: #c1b5ff; border: 1px solid rgba(169,150,255,.25); }
-        .kg-node-type.kg-violation{ background: rgba(255,101,117,.12); color: #ff8d9e; border: 1px solid rgba(255,101,117,.25); }
-        .kg-node-type.kg-rule     { background: rgba(110,231,255,.1);  color: #6ee7ff; border: 1px solid rgba(110,231,255,.22); }
-        .kg-node-type.kg-nist     { background: rgba(57,220,164,.1);   color: #39dca4; border: 1px solid rgba(57,220,164,.22); }
-        .kg-node-type.kg-cis      { background: rgba(193,181,255,.12); color: #c1b5ff; border: 1px solid rgba(193,181,255,.25); }
-        .kg-node-type.kg-line     { background: rgba(243,189,85,.1);   color: #f3bd55; border: 1px solid rgba(243,189,85,.22); }
-        .kg-trace-node .kg-node-text { color: var(--text-soft); font-weight: 500; word-break: break-all; }
-        .kg-trace-arrow { margin: 4px 0 4px 20px; color: rgba(157,134,255,.4); font-size: 14px; line-height: 1; }
+        .kg-node-type.kg-device   { background: rgba(201,154,59,.10); color: #9c6d19; border: 1px solid rgba(201,154,59,.22); }
+        .kg-node-type.kg-violation{ background: rgba(201,79,85,.08); color: #b93e45; border: 1px solid rgba(201,79,85,.18); }
+        .kg-node-type.kg-rule     { background: rgba(74,144,194,.08); color: #2e6b99; border: 1px solid rgba(74,144,194,.18); }
+        .kg-node-type.kg-nist     { background: rgba(38,150,106,.08); color: #22855c; border: 1px solid rgba(38,150,106,.18); }
+        .kg-node-type.kg-cis      { background: rgba(140,110,190,.08); color: #6d51a0; border: 1px solid rgba(140,110,190,.18); }
+        .kg-node-type.kg-line     { background: rgba(180,125,30,.08); color: #9c6d19; border: 1px solid rgba(180,125,30,.20); }
+        .kg-trace-node .kg-node-text { color: #625d54; font-weight: 500; word-break: break-all; }
+        .kg-trace-arrow { margin: 4px 0 4px 20px; color: rgba(201,154,59,.5); font-size: 14px; line-height: 1; }
 
+        /* Modals */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 200;
             display: none; align-items: center; justify-content: center; padding: 24px;
@@ -209,67 +210,78 @@
         .modal-overlay.open { display: flex; }
         .modal-backdrop {
             position: absolute; inset: 0;
-            background: rgba(2,3,7,.85); backdrop-filter: blur(12px);
+            background: rgba(40,34,23,.55); backdrop-filter: blur(12px);
         }
         .modal-panel {
             position: relative; width: min(900px, 100%); max-height: 90vh;
             display: flex; flex-direction: column; border-radius: 20px;
-            border: 1px solid rgba(255,255,255,.13);
-            background: linear-gradient(145deg, #10151e, #080b10);
+            border: 1px solid rgba(201,154,59,.24);
+            background: linear-gradient(145deg, #ffffff, #faf7ef);
+            box-shadow: 0 40px 100px rgba(50,40,20,.25);
             overflow: hidden;
         }
         .modal-panel.wide { width: min(1280px, 100%); }
         .modal-header {
             display: flex; justify-content: space-between; align-items: flex-start;
             padding: 26px 28px 20px;
-            border-bottom: 1px solid rgba(255,255,255,.06);
+            border-bottom: 1px solid rgba(70,55,25,.10);
         }
         .modal-header h2 {
-            font-family: var(--display); font-size: 24px;
-            margin-top: 8px; color: var(--text);
+            font-family: 'Inter Tight', sans-serif; font-size: 24px;
+            margin-top: 8px; color: #191815;
         }
         .modal-close {
             width: 34px; height: 34px; border-radius: 8px;
-            background: rgba(255,255,255,.04); color: var(--text-muted);
+            background: #f4f1e9; color: #777167;
             cursor: pointer; font-size: 15px; flex: 0 0 auto; border: 0;
         }
-        .modal-body { flex: 1; overflow: auto; padding: 22px 28px; background: rgba(0,0,0,.28); }
+        .modal-close:hover { background: rgba(201,154,59,.12); color: #191815; }
+        .modal-body { flex: 1; overflow: auto; padding: 22px 28px; background: #fffdf8; }
         .modal-body pre {
-            font-family: var(--mono); font-size: 12px; line-height: 1.75;
-            color: #b8c2d4; white-space: pre; overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.75;
+            color: #3a352c; white-space: pre; overflow-x: auto;
         }
         .modal-footer {
             display: flex; justify-content: flex-end; gap: 10px;
-            padding: 18px 28px; border-top: 1px solid rgba(255,255,255,.06);
+            padding: 18px 28px; border-top: 1px solid rgba(70,55,25,.10);
+            background: #faf7ef;
         }
         .action-mini {
             padding: 11px 20px; border-radius: 9px;
             font-size: 12px; font-weight: 600; cursor: pointer;
-            font-family: var(--sans); border: 0;
+            font-family: 'Inter', sans-serif; border: 0;
         }
         .action-mini.secondary {
-            background: rgba(255,255,255,.04); color: var(--text-soft);
-            border: 1px solid var(--border);
+            background: #ffffff; color: #777167;
+            border: 1px solid rgba(70,55,25,.12);
         }
-        .action-mini.primary { background: linear-gradient(135deg, #8b6cff, #6e52e8); color: white; }
-        .action-mini.copied { background: linear-gradient(90deg, #39dca4, #22a97c); color: white; }
+        .action-mini.secondary:hover { color: #191815; border-color: rgba(201,154,59,.4); }
+        .action-mini.primary {
+            background: linear-gradient(135deg, #e4c06b, #b98325);
+            color: #211a0d;
+        }
+        .action-mini.copied {
+            background: linear-gradient(90deg, #2fae7a, #22855c);
+            color: white;
+        }
 
+        /* Knowledge Graph */
         #cy {
             width: 100%; height: 46vh;
             border-radius: 12px;
-            background: radial-gradient(circle at 50% 50%, rgba(157,134,255,.04), transparent 60%), #05060a;
-            border: 1px solid rgba(255,255,255,.06);
+            background: radial-gradient(circle at 50% 50%, rgba(201,154,59,.06), transparent 60%), #fffdf8;
+            border: 1px solid rgba(70,55,25,.10);
         }
         .graph-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
         .graph-stat {
             padding: 12px 16px; border-radius: 10px;
-            background: rgba(255,255,255,.02);
-            border: 1px solid var(--border); text-align: center;
+            background: #ffffff;
+            border: 1px solid rgba(70,55,25,.10); text-align: center;
         }
-        .graph-stat-num { font-family: var(--display); font-size: 24px; font-weight: 700; }
+        .graph-stat-num { font-family: 'Inter Tight', sans-serif; font-size: 24px; font-weight: 700; color: #191815; }
         .graph-stat-lbl {
-            font-family: var(--mono); font-size: 9px;
-            letter-spacing: 0.1em; color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace; font-size: 9px;
+            letter-spacing: 0.1em; color: #8b857a;
             text-transform: uppercase; margin-top: 4px;
         }
 
@@ -277,94 +289,105 @@
             display: flex; flex-wrap: wrap; gap: 6px;
             margin-bottom: 12px; padding: 10px 14px;
             border-radius: 12px;
-            background: rgba(255,255,255,.015);
-            border: 1px solid var(--border);
+            background: #ffffff;
+            border: 1px solid rgba(70,55,25,.10);
         }
         .node-filter {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 8px 14px; border-radius: 999px;
-            background: rgba(255,255,255,.03);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
+            background: #ffffff;
+            border: 1px solid rgba(70,55,25,.12);
+            color: #777167;
             font-size: 11px; font-weight: 500;
             cursor: pointer; user-select: none;
             transition: all .2s ease;
-            font-family: var(--sans);
+            font-family: 'Inter', sans-serif;
         }
-        .node-filter:hover { color: var(--text); border-color: rgba(157,134,255,.3); }
+        .node-filter:hover { color: #191815; border-color: rgba(201,154,59,.4); }
         .node-filter.active {
-            color: white;
-            background: rgba(157,134,255,.12);
-            border-color: rgba(157,134,255,.4);
-            box-shadow: 0 4px 15px rgba(157,134,255,.1);
+            color: #211a0d;
+            background: linear-gradient(135deg, #e4c06b, #b98325);
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(183,132,35,.2);
         }
         .node-filter .nf-dot {
             width: 10px; height: 10px; border-radius: 50%;
             box-shadow: 0 0 8px currentColor;
         }
         .node-filter .nf-count {
-            font-family: var(--mono); font-size: 9px;
+            font-family: 'JetBrains Mono', monospace; font-size: 9px;
             padding: 2px 6px; border-radius: 999px;
-            background: rgba(255,255,255,.06);
-            color: var(--text-muted);
+            background: rgba(0,0,0,.06);
+            color: #777167;
         }
         .node-filter.active .nf-count {
-            background: rgba(255,255,255,.15);
-            color: white;
+            background: rgba(255,255,255,.35);
+            color: #211a0d;
         }
 
+        /* Chat */
         .chat-wrap {
             margin-top: 70px; padding: 30px;
-            border: 1px solid var(--border); border-radius: 18px;
-            background: linear-gradient(145deg, rgba(15,17,26,.9), rgba(8,10,16,.82));
+            border: 1px solid rgba(70,55,25,.10); border-radius: 18px;
+            background: #ffffff;
+            box-shadow: 0 12px 35px rgba(65,50,25,.05);
         }
-        .chat-wrap h3 { font-family: var(--display); font-size: 20px; margin-bottom: 8px; }
-        .chat-wrap > p { color: var(--text-muted); font-size: 12px; margin-bottom: 20px; }
+        .chat-wrap h3 { font-family: 'Inter Tight', sans-serif; font-size: 20px; margin-bottom: 8px; color: #191815; }
+        .chat-wrap > p { color: #8b857a; font-size: 12px; margin-bottom: 20px; }
         .chat-messages {
             min-height: 200px; max-height: 460px; overflow-y: auto;
-            padding: 18px; background: rgba(3,4,8,.5);
-            border: 1px solid var(--border); border-radius: 13px;
+            padding: 18px; background: #faf7ef;
+            border: 1px solid rgba(70,55,25,.08); border-radius: 13px;
             margin-bottom: 15px;
         }
         .msg-user {
             display: inline-block; float: right; clear: both;
             max-width: 78%; padding: 10px 15px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            color: white; border-radius: 14px 14px 2px 14px;
+            background: linear-gradient(135deg, #e4c06b, #b98325);
+            color: #211a0d; border-radius: 14px 14px 2px 14px;
             font-size: 13px; margin-bottom: 12px;
+            font-weight: 500;
         }
         .msg-ai {
             display: block; clear: both; max-width: 82%;
-            padding: 12px 15px; background: rgba(255,255,255,.03);
-            border: 1px solid var(--border); color: var(--text-soft);
+            padding: 12px 15px; background: #ffffff;
+            border: 1px solid rgba(70,55,25,.10); color: #3a352c;
             border-radius: 14px 14px 14px 2px; font-size: 13px;
             line-height: 1.65; margin-bottom: 12px;
         }
         .msg-ai code {
-            background: rgba(157,134,255,.1); color: #b8aaff;
+            background: rgba(201,154,59,.10); color: #9c6d19;
             padding: 2px 6px; border-radius: 4px;
-            font-family: var(--mono); font-size: 12px;
+            font-family: 'JetBrains Mono', monospace; font-size: 12px;
         }
+        .msg-ai p { margin: 6px 0; }
+        .msg-ai strong { color: #191815; font-weight: 600; }
+        .msg-ai ul, .msg-ai ol { margin: 8px 0 8px 20px; }
+        .msg-ai li { margin-bottom: 4px; }
         .chat-input-row { display: flex; gap: 10px; }
         .chat-input-row input {
             flex: 1; padding: 13px 18px;
-            background: rgba(255,255,255,.03);
-            border: 1px solid var(--border); border-radius: 50px;
-            color: var(--text); font-size: 13px; outline: none;
+            background: #ffffff;
+            border: 1px solid rgba(70,55,25,.12); border-radius: 50px;
+            color: #191815; font-size: 13px; outline: none;
         }
+        .chat-input-row input:focus { border-color: rgba(201,154,59,.5); }
         .chat-input-row button {
             padding: 13px 28px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            color: white; border-radius: 50px; font-weight: 600;
+            background: linear-gradient(135deg, #e4c06b, #b98325);
+            color: #211a0d; border-radius: 50px; font-weight: 600;
             font-size: 13px; cursor: pointer; border: 0;
         }
+        .chat-input-row button:disabled { opacity: .5; cursor: not-allowed; }
         .quick-q { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 15px; }
         .quick-q button {
-            padding: 7px 14px; background: rgba(157,134,255,.06);
-            border: 1px solid rgba(157,134,255,.18);
-            color: var(--accent-light); border-radius: 20px;
+            padding: 7px 14px; background: rgba(201,154,59,.06);
+            border: 1px solid rgba(201,154,59,.22);
+            color: #9c6d19; border-radius: 20px;
             font-size: 12px; cursor: pointer;
+            transition: all .2s;
         }
+        .quick-q button:hover { background: rgba(201,154,59,.14); color: #191815; }
     </style>
 </head>
 <body>
@@ -375,21 +398,11 @@
     <div class="ambient ambient-two"></div>
 
     <nav class="navbar">
-        <a href="/" class="brand">
-            <div class="brand-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z"/>
-                </svg>
-            </div>
-            <div class="brand-text">Secure<span>Audit</span></div>
-        </a>
+        <a href="/" class="brand">TE AUDITS</a>
         <div class="nav-links">
             <a href="/" class="nav-link">Home</a>
             <a href="/history" class="nav-link">History</a>
-        </div>
-        <div class="system-status">
-            <span class="status-pulse"></span>
-            <span>AUDIT COMPLETE</span>
+            <a href="/logout" class="nav-link">Logout</a>
         </div>
     </nav>
 
@@ -424,9 +437,9 @@
                             {% if results.compliance_score >= 80 %}
                                 <span class="score-status">EXCELLENT</span>
                             {% elif results.compliance_score >= 50 %}
-                                <span class="score-status" style="color:#e3bc69;">NEEDS WORK</span>
+                                <span class="score-status" style="color:#b47d1e;background:rgba(180,125,30,.07);border-color:rgba(180,125,30,.18);">NEEDS WORK</span>
                             {% else %}
-                                <span class="score-status" style="color:#ff8d9e;">CRITICAL</span>
+                                <span class="score-status" style="color:#c94f55;background:rgba(201,79,85,.07);border-color:rgba(201,79,85,.18);">CRITICAL</span>
                             {% endif %}
                             <p>{{ results.passed_count }} of {{ results.total_rules }} rules passed.</p>
                         </div>
@@ -435,13 +448,13 @@
 
                 <div class="score-card stat-card">
                     <div class="stat-label">PASSED</div>
-                    <strong style="color: var(--success);">{{ results.passed_count }}</strong>
+                    <strong style="color: #26966a;">{{ results.passed_count }}</strong>
                     <div class="stat-description">rules compliant</div>
                 </div>
 
                 <div class="score-card stat-card">
                     <div class="stat-label">VIOLATIONS</div>
-                    <strong style="color: var(--danger);">{{ results.violation_count }}</strong>
+                    <strong style="color: #c94f55;">{{ results.violation_count }}</strong>
                     <div class="stat-description">issues detected</div>
                 </div>
             </div>
@@ -484,12 +497,12 @@
                         <div>
                             <div class="finding-title">{{ violation.description }}</div>
                             <span class="finding-rule">{{ violation.rule }}</span>
-                            <div class="compliance-badges">
+                            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
                                 {% if violation.nist_control %}
-                                    <span class="badge badge-nist">🛡 {{ violation.nist_control }}</span>
+                                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;background:rgba(38,150,106,.08);border:1px solid rgba(38,150,106,.2);color:#22855c;">🛡 {{ violation.nist_control }}</span>
                                 {% endif %}
                                 {% if violation.cis_benchmark %}
-                                    <span class="badge badge-cis">✓ {{ violation.cis_benchmark }}</span>
+                                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;background:rgba(140,110,190,.08);border:1px solid rgba(140,110,190,.22);color:#6d51a0;">✓ {{ violation.cis_benchmark }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -508,9 +521,9 @@
                                         <button class="copy-button" onclick="navigator.clipboard.writeText('{{ violation.remediation }}'); this.textContent='COPIED';">COPY</button>
                                     </div>
                                     {% if violation.line_number %}
-                                    <div class="finding-line-trace">
-                                        <span class="line-num">Line {{ violation.line_number }}:</span>
-                                        <span class="line-content">{{ violation.line_content or 'configuration issue detected' }}</span>
+                                    <div style="margin-top:8px;padding:8px 12px;border-radius:7px;background:rgba(201,79,85,.05);border:1px solid rgba(201,79,85,.18);font-family:'JetBrains Mono',monospace;font-size:11px;color:#b93e45;">
+                                        <strong>Line {{ violation.line_number }}:</strong>
+                                        <span style="color:#625d54;">{{ violation.line_content or 'configuration issue detected' }}</span>
                                     </div>
                                     {% endif %}
                                 </div>
@@ -519,7 +532,7 @@
                                     {% if violation.ai_explanation %}
                                         <div class="ai-md" data-md="{{ violation.ai_explanation | e }}"></div>
                                     {% else %}
-                                        <p style="color: var(--text-muted); font-size: 13px;">AI explanation unavailable for this violation.</p>
+                                        <p style="color: #8b857a; font-size: 13px;">AI explanation unavailable for this violation.</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -599,14 +612,8 @@
                 {% for check in results.passed_checks %}
                 <div class="finding" style="padding: 15px 17px;">
                     <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                        <span class="severity" style="color:#67d7a6;background:rgba(86,224,165,.065);border-color:rgba(86,224,165,.13);">PASS</span>
+                        <span class="severity" style="color:#22855c;background:rgba(38,150,106,.08);border:1px solid rgba(38,150,106,.18);">PASS</span>
                         <div class="finding-title">{{ check.description }}</div>
-                        {% if check.nist_control %}
-                            <span class="badge badge-nist">🛡 {{ check.nist_control }}</span>
-                        {% endif %}
-                        {% if check.cis_benchmark %}
-                            <span class="badge badge-cis">✓ {{ check.cis_benchmark }}</span>
-                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -626,7 +633,7 @@
                 </div>
 
                 <div class="chat-messages" id="chatMessages">
-                    <div style="text-align:center; color: var(--text-muted); font-size:12px; padding: 30px;" id="chatPlaceholder">
+                    <div style="text-align:center; color: #8b857a; font-size:12px; padding: 30px;" id="chatPlaceholder">
                         No messages yet. Ask a question below!
                     </div>
                 </div>
@@ -649,7 +656,7 @@
                 <div>
                     <div class="section-kicker">RELATIONSHIP VISUALIZATION</div>
                     <h2>Compliance Knowledge Graph</h2>
-                    <p style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
+                    <p style="color: #8b857a; font-size: 12px; margin-top: 6px;">
                         Toggle node types below to reduce clutter. Click any node to highlight its relationships.
                     </p>
                 </div>
@@ -677,27 +684,27 @@
 
                 <div class="node-filters" id="nodeFilters">
                     <button type="button" class="node-filter active" data-type="file">
-                        <span class="nf-dot" style="background:#a996ff; color:#a996ff;"></span>
+                        <span class="nf-dot" style="background:#c99a3b; color:#c99a3b;"></span>
                         File <span class="nf-count" data-count="file">0</span>
                     </button>
                     <button type="button" class="node-filter active" data-type="vendor">
-                        <span class="nf-dot" style="background:#6ee7ff; color:#6ee7ff;"></span>
+                        <span class="nf-dot" style="background:#4a90c2; color:#4a90c2;"></span>
                         Vendor <span class="nf-count" data-count="vendor">0</span>
                     </button>
                     <button type="button" class="node-filter active" data-type="violation">
-                        <span class="nf-dot" style="background:#ff6575; color:#ff6575;"></span>
+                        <span class="nf-dot" style="background:#c94f55; color:#c94f55;"></span>
                         Violations <span class="nf-count" data-count="violation">0</span>
                     </button>
                     <button type="button" class="node-filter active" data-type="nist">
-                        <span class="nf-dot" style="background:#39dca4; color:#39dca4;"></span>
+                        <span class="nf-dot" style="background:#26966a; color:#26966a;"></span>
                         NIST <span class="nf-count" data-count="nist">0</span>
                     </button>
                     <button type="button" class="node-filter active" data-type="cis">
-                        <span class="nf-dot" style="background:#c1b5ff; color:#c1b5ff;"></span>
+                        <span class="nf-dot" style="background:#8c6ebe; color:#8c6ebe;"></span>
                         CIS <span class="nf-count" data-count="cis">0</span>
                     </button>
                     <button type="button" class="node-filter" data-type="line">
-                        <span class="nf-dot" style="background:#697485; color:#697485;"></span>
+                        <span class="nf-dot" style="background:#8b857a; color:#8b857a;"></span>
                         Config Lines <span class="nf-count" data-count="line">0</span>
                     </button>
                 </div>
@@ -719,7 +726,7 @@
                 <div>
                     <div class="section-kicker">REMEDIATION SCRIPT</div>
                     <h2>Fix All Violations</h2>
-                    <p style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
+                    <p style="color: #8b857a; font-size: 12px; margin-top: 6px;">
                         Copy this script and paste it into the device CLI.
                     </p>
                 </div>
@@ -870,9 +877,9 @@
             if (elH) elH.textContent = counts.high;
             if (elM) elM.textContent = counts.medium;
             if (elL) elL.textContent = counts.low;
-            if (counts.high === 0) document.querySelector('[data-filter="high"]').style.display = 'none';
-            if (counts.medium === 0) document.querySelector('[data-filter="medium"]').style.display = 'none';
-            if (counts.low === 0) document.querySelector('[data-filter="low"]').style.display = 'none';
+            if (counts.high === 0) { const el = document.querySelector('[data-filter="high"]'); if (el) el.style.display = 'none'; }
+            if (counts.medium === 0) { const el = document.querySelector('[data-filter="medium"]'); if (el) el.style.display = 'none'; }
+            if (counts.low === 0) { const el = document.querySelector('[data-filter="low"]'); if (el) el.style.display = 'none'; }
         }
 
         function filterFindings(filter) {
@@ -915,26 +922,24 @@
     </script>
 
     <script>
-        // ============================================
-        // KNOWLEDGE GRAPH
-        // ============================================
+        // Knowledge Graph
         let cyInstance = null;
         let allElements = [];
         const auditIdForGraph = {{ results.id or 0 }};
         const visibleTypes = { file: true, vendor: true, violation: true, nist: true, cis: true, line: false };
 
         const nodeColors = {
-            file: { bg: '#a996ff', border: '#8b6cff' },
-            vendor: { bg: '#6ee7ff', border: '#22d3ee' },
-            nist: { bg: '#39dca4', border: '#22a97c' },
-            cis: { bg: '#c1b5ff', border: '#a996ff' },
-            line: { bg: '#697485', border: '#4a5568' }
+            file: { bg: '#c99a3b', border: '#9c6d19' },
+            vendor: { bg: '#4a90c2', border: '#2e6b99' },
+            nist: { bg: '#26966a', border: '#1d7a55' },
+            cis: { bg: '#8c6ebe', border: '#6d51a0' },
+            line: { bg: '#8b857a', border: '#5f5a50' }
         };
 
         function getViolationColor(severity) {
-            if (severity === 'HIGH') return { bg: '#ff6575', border: '#e5394f' };
-            if (severity === 'MEDIUM') return { bg: '#f3bd55', border: '#e0a02d' };
-            return { bg: '#74b9ff', border: '#4a9ce8' };
+            if (severity === 'HIGH') return { bg: '#c94f55', border: '#a83a40' };
+            if (severity === 'MEDIUM') return { bg: '#b47d1e', border: '#8f6215' };
+            return { bg: '#4a90c2', border: '#2e6b99' };
         }
 
         function getNodeData(n) {
@@ -973,7 +978,7 @@
             document.getElementById('cy').innerHTML = '';
 
             if (typeof cytoscape === 'undefined') {
-                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#ff6575;">Graph library failed to load.</div>';
+                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#c94f55;">Graph library failed to load.</div>';
                 return;
             }
 
@@ -982,12 +987,11 @@
                 const data = await res.json();
 
                 if (!data.graph) {
-                    document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#666;">No graph data available.</div>';
+                    document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#8b857a;">No graph data available.</div>';
                     return;
                 }
 
                 const stats = data.stats || {};
-                const byType = stats.by_type || {};
                 const nodesList = data.graph.nodes || [];
                 const edgesList = data.graph.edges || [];
 
@@ -998,14 +1002,10 @@
                     if (typeCounts[t] !== undefined) typeCounts[t]++;
                 });
 
-                const violations = typeCounts.violation;
-                const nistCount = typeCounts.nist;
-                const cisCount = typeCounts.cis;
-
                 document.getElementById('statNodes').textContent = stats.total_nodes || nodesList.length || 0;
                 document.getElementById('statEdges').textContent = stats.total_edges || edgesList.length || 0;
-                document.getElementById('statViolations').textContent = violations;
-                document.getElementById('statControls').textContent = nistCount + cisCount;
+                document.getElementById('statViolations').textContent = typeCounts.violation;
+                document.getElementById('statControls').textContent = typeCounts.nist + typeCounts.cis;
 
                 document.querySelectorAll('.nf-count').forEach(function(el) {
                     const t = el.getAttribute('data-count');
@@ -1019,7 +1019,7 @@
                     const severity = nd.severity || '';
                     let colors;
                     if (type === 'violation') colors = getViolationColor(severity);
-                    else colors = nodeColors[type] || { bg: '#697485', border: '#4a5568' };
+                    else colors = nodeColors[type] || { bg: '#8b857a', border: '#5f5a50' };
 
                     allElements.push({
                         data: {
@@ -1051,7 +1051,7 @@
                 });
 
                 if (allElements.length === 0) {
-                    document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#666;">Graph is empty.</div>';
+                    document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#8b857a;">Graph is empty.</div>';
                     return;
                 }
 
@@ -1062,7 +1062,7 @@
                     elements: visibleElements,
                     style: [
                         { selector: 'node', style: {
-                            'label': 'data(label)', 'color': '#f5f7fb',
+                            'label': 'data(label)', 'color': '#191815',
                             'font-size': '11px', 'font-family': 'Inter, sans-serif',
                             'font-weight': 600, 'text-valign': 'bottom',
                             'text-halign': 'center', 'text-margin-y': 8,
@@ -1070,7 +1070,7 @@
                             'border-width': 2, 'border-color': 'data(border)',
                             'width': 24, 'height': 24,
                             'text-wrap': 'wrap', 'text-max-width': 130,
-                            'text-outline-color': '#06080c', 'text-outline-width': 2.5
+                            'text-outline-color': '#ffffff', 'text-outline-width': 2.5
                         }},
                         { selector: 'node[type="file"]', style: { 'width': 50, 'height': 50, 'font-size': '13px', 'font-weight': 700 }},
                         { selector: 'node[type="vendor"]', style: { 'width': 42, 'height': 42, 'font-size': '12px', 'font-weight': 700 }},
@@ -1078,16 +1078,16 @@
                         { selector: 'node[type="nist"], node[type="cis"]', style: { 'width': 28, 'height': 28, 'font-size': '10px' }},
                         { selector: 'node[type="line"]', style: { 'width': 18, 'height': 18, 'font-size': '9px' }},
                         { selector: 'edge', style: {
-                            'width': 1.5, 'line-color': 'rgba(157,134,255,.25)',
-                            'target-arrow-color': 'rgba(157,134,255,.5)',
+                            'width': 1.5, 'line-color': 'rgba(201,154,59,.4)',
+                            'target-arrow-color': 'rgba(201,154,59,.6)',
                             'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'arrow-scale': 0.7
                         }},
-                        { selector: 'edge[relation="violates"]', style: { 'line-color': 'rgba(255,101,117,.3)', 'target-arrow-color': 'rgba(255,101,117,.6)' }},
-                        { selector: 'edge[relation="detected_as"]', style: { 'line-color': 'rgba(110,231,255,.4)', 'target-arrow-color': 'rgba(110,231,255,.7)', 'width': 2 }},
-                        { selector: 'edge[relation="produced"]', style: { 'line-color': 'rgba(255,101,117,.2)', 'target-arrow-color': 'rgba(255,101,117,.5)' }},
-                        { selector: ':selected', style: { 'border-width': 4, 'border-color': '#ffffff' }},
+                        { selector: 'edge[relation="violates"]', style: { 'line-color': 'rgba(201,79,85,.4)', 'target-arrow-color': 'rgba(201,79,85,.65)' }},
+                        { selector: 'edge[relation="detected_as"]', style: { 'line-color': 'rgba(74,144,194,.5)', 'target-arrow-color': 'rgba(74,144,194,.75)', 'width': 2 }},
+                        { selector: 'edge[relation="produced"]', style: { 'line-color': 'rgba(201,79,85,.25)', 'target-arrow-color': 'rgba(201,79,85,.55)' }},
+                        { selector: ':selected', style: { 'border-width': 4, 'border-color': '#191815' }},
                         { selector: '.faded', style: { 'opacity': 0.15 }},
-                        { selector: '.highlighted', style: { 'border-width': 3, 'border-color': '#a996ff' }}
+                        { selector: '.highlighted', style: { 'border-width': 3, 'border-color': '#c99a3b' }}
                     ],
                     layout: getCyLayout(),
                     wheelSensitivity: 0.2, minZoom: 0.3, maxZoom: 3
@@ -1123,7 +1123,7 @@
                 });
             } catch (err) {
                 console.error('Graph error:', err);
-                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#ff6575;">Failed to load graph: ' + err.message + '</div>';
+                document.getElementById('cy').innerHTML = '<div style="padding:40px; text-align:center; color:#c94f55;">Failed to load graph: ' + err.message + '</div>';
             }
         }
 

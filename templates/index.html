@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureAudit — AI Network Compliance Auditor</title>
+    <title>TE Audits — AI Network Compliance Auditor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
     <style>
         .mode-switcher {
             display: inline-flex;
@@ -16,8 +15,8 @@
             padding: 4px;
             margin-bottom: 18px;
             border-radius: 999px;
-            background: rgba(255,255,255,.03);
-            border: 1px solid var(--border);
+            background: rgba(201,154,59,.06);
+            border: 1px solid rgba(201,154,59,.18);
         }
         .mode-tab {
             display: inline-flex;
@@ -26,19 +25,19 @@
             padding: 9px 18px;
             border-radius: 999px;
             background: transparent;
-            color: var(--text-muted);
-            font-family: var(--sans);
+            color: #8b857a;
+            font-family: 'Inter', sans-serif;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             border: 0;
             transition: all .2s ease;
         }
-        .mode-tab:hover { color: var(--text); }
+        .mode-tab:hover { color: #191815; }
         .mode-tab.active {
-            color: white;
-            background: linear-gradient(135deg, #8b6cff, #6e52e8);
-            box-shadow: 0 6px 20px rgba(111,82,232,.3);
+            color: #211a0d;
+            background: linear-gradient(135deg, #e4c06b, #b98325);
+            box-shadow: 0 6px 20px rgba(183,132,35,.25);
         }
         .mode-icon { font-size: 14px; }
     </style>
@@ -52,25 +51,21 @@
     <div class="ambient ambient-three"></div>
     <div class="scan-line"></div>
 
+    <!-- ============================================================ -->
+    <!-- NAVBAR                                                        -->
+    <!-- ============================================================ -->
     <nav class="navbar">
-        <a href="/" class="brand">
-            <div class="brand-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z"/>
-                </svg>
-            </div>
-            <div class="brand-text">Secure<span>Audit</span></div>
-        </a>
+        <a href="/" class="brand">TE AUDITS</a>
         <div class="nav-links">
-            <a href="/" class="nav-link">Home</a>
+            <a href="/" class="nav-link active">Home</a>
             <a href="/history" class="nav-link">History</a>
-        </div>
-        <div class="system-status">
-            <span class="status-pulse"></span>
-            <span>SYSTEM ONLINE</span>
+            <a href="/logout" class="nav-link">Logout</a>
         </div>
     </nav>
 
+    <!-- ============================================================ -->
+    <!-- HERO                                                          -->
+    <!-- ============================================================ -->
     <section class="hero">
         <div class="hero-content">
             <div class="eyebrow">
@@ -84,16 +79,16 @@
             </h1>
 
             <p class="hero-description">
-                Upload a single config or an entire ZIP of network devices — Cisco, Juniper, Arista —
-                and get instant AI-powered compliance analysis with clear remediation steps.
+                Upload a single config or an entire ZIP of network devices — Cisco, Juniper, Arista,
+                Fortinet, Palo Alto, Huawei — and get instant AI-powered compliance analysis.
             </p>
 
-            <div class="mode-switcher" id="modeSwitcher">
+            <div class="mode-switcher">
                 <button type="button" class="mode-tab active" data-mode="single" onclick="setMode('single')">
                     <span class="mode-icon">📄</span> Single File
                 </button>
                 <button type="button" class="mode-tab" data-mode="batch" onclick="setMode('batch')">
-                    <span class="mode-icon">📦</span> Batch Upload (ZIP)
+                    <span class="mode-icon">📦</span> Batch Upload
                 </button>
             </div>
 
@@ -137,7 +132,7 @@
                                 <path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
                             </svg>
                         </div>
-                        <div class="selected-file-details file-info">
+                        <div class="selected-file-details">
                             <span class="selected-label">FILE READY</span>
                             <strong id="fileName">config.txt</strong>
                             <span class="file-meta" id="fileMeta">0 KB</span>
@@ -169,6 +164,132 @@
         </div>
     </section>
 
+    <!-- ============================================================ -->
+    <!-- FEATURES SECTION                                              -->
+    <!-- ============================================================ -->
+    <section class="features-section">
+        <div class="section-container">
+            <div class="section-heading">
+                <div>
+                    <div class="section-kicker">CORE CAPABILITIES</div>
+                    <h2>
+                        Everything you need
+                        <span>for compliant networks.</span>
+                    </h2>
+                </div>
+                <p>
+                    Built for modern heterogeneous networks. From parsing multi-vendor configs
+                    to producing audit-ready evidence — TE Audits handles the full compliance
+                    lifecycle in one integrated platform.
+                </p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-number">01</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                            <path d="M12 2L3 7v6c0 5 3.5 9.5 9 11 5.5-1.5 9-6 9-11V7l-9-5z"/>
+                        </svg>
+                    </div>
+                    <h3>Multi-Vendor Parsing</h3>
+                    <p>
+                        Cisco, Juniper, Arista, Fortinet, Palo Alto, Huawei — one unified engine
+                        detects vendor syntax automatically and normalizes configs into a
+                        single analyzable format.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-number">02</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <h3>NIST &amp; CIS Mapping</h3>
+                    <p>
+                        Every violation is traced to its NIST SP 800-53 control and CIS Benchmark.
+                        Produce audit-ready evidence that satisfies ISO 27001, PCI-DSS,
+                        and NIST compliance frameworks.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-number">03</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                            <path d="M12 2v20M2 12h20"/>
+                            <circle cx="12" cy="12" r="4"/>
+                        </svg>
+                    </div>
+                    <h3>AI Explanations</h3>
+                    <p>
+                        Each finding includes a full AI-generated explanation: why it's a risk,
+                        potential business impact, and a step-by-step remediation guide
+                        with vendor-specific commands.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-number">04</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <path d="M7 10l5 5 5-5M12 15V3"/>
+                        </svg>
+                    </div>
+                    <h3>Audit-Ready Reports</h3>
+                    <p>
+                        Export professional PDF reports with compliance scores, violation details,
+                        config-line traces, and remediation scripts. What used to take hours
+                        now takes one click.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- CLOSING CTA                                                   -->
+    <!-- ============================================================ -->
+    <section class="closing-section">
+        <div class="closing-glow"></div>
+        <div class="closing-content">
+            <div class="section-kicker">READY TO START</div>
+            <h2>
+                Secure your network
+                <span>before the audit does.</span>
+            </h2>
+            <button type="button" class="secondary-cta" onclick="document.getElementById('fileInput').click()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+                </svg>
+                Upload a config file
+            </button>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- FOOTER                                                        -->
+    <!-- ============================================================ -->
+    <footer class="footer">
+        <div class="footer-brand">
+            <span class="footer-mark">◆</span>
+            TE AUDITS
+        </div>
+        <div>
+            AI-DRIVEN MULTI-VENDOR NETWORK SECURITY COMPLIANCE AUDITOR
+        </div>
+        <div>
+            SIH26155 · NTR0 · 2026
+        </div>
+    </footer>
+
+    <!-- ============================================================ -->
+    <!-- SCAN OVERLAY                                                  -->
+    <!-- ============================================================ -->
     <div class="scan-overlay" id="scanOverlay">
         <div class="scan-panel">
             <div class="scan-symbol">
@@ -199,6 +320,9 @@
         </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- SCRIPT                                                        -->
+    <!-- ============================================================ -->
     <script>
         let currentMode = 'single';
 
@@ -242,7 +366,6 @@
                 submitText.textContent = 'Run Compliance Audit';
             }
 
-            // Reset file
             fileInput.value = '';
             uploadState.style.display = 'flex';
             selectedState.classList.remove('visible');
