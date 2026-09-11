@@ -15,18 +15,20 @@ from knowledge_graph import ComplianceKnowledgeGraph
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Ensure required directories exist (needed for cloud deployment)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Initialize database
 init_db()
 
-# Initialize Groq client for AI — with retries disabled to prevent OOM kills on Render
+# ============================================================
+# Groq client — KEY FIX: max_retries=0 prevents the OOM crash
+# The retry loop was sleeping + retrying, exhausting memory.
+# With max_retries=0, failures return immediately and we fall
+# back to the next model FAST instead of hanging.
+# ============================================================
 try:
     client = groq.Groq(
         api_key=app.config['GROQ_API_KEY'],
         max_retries=0,
-        timeout=20.0
+        timeout=25.0
     )
     ai_enabled = True
     print("AI Assistant is ENABLED!")
@@ -36,56 +38,91 @@ except Exception as e:
     print("Groq API not configured. AI features disabled. Error: " + str(e))
 
 
+# Models in priority order — fastest first, fallback to stronger ones
+AI_MODELS = [
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b"
+]
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
+def call_ai(messages, temperature=0.4, max_tokens=500):
+    """Try each model in order. Returns None if all fail."""
+    if not ai_enabled:
+        return None
+
+    for model_name in AI_MODELS:
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print("Model " + model_name + " failed: " + str(e)[:120])
+            continue
+
+    return None
+
+
 def get_ai_explanation(violation):
-    """Use AI to generate a structured explanation. Fails gracefully on rate limits."""
+    """Full-quality AI explanation — for EVERY violation."""
     if not ai_enabled:
         return "AI explanation unavailable."
 
-    try:
-        prompt = f"""Explain this network compliance violation concisely.
+    prompt = f"""You are a senior network security engineer explaining a compliance violation to a colleague.
 
+CONTEXT:
 Violation: {violation['description']}
 Severity: {violation['severity']}
-Fix Command: {violation.get('remediation', 'N/A')}
+Rule ID: {violation['rule']}
+Base Fix Command: {violation.get('remediation', 'N/A')}
 
-Respond EXACTLY in this format (no intro):
+Respond EXACTLY in this markdown format (no extra text before or after):
 
 ### Why it matters
-- 2 short bullets on the security risk
+- First specific security risk, one sentence
+- Second risk, one sentence
+- Third risk if applicable
 
 ### Potential impact
-- **Business:** 1 short sentence
-- **Technical:** 1 short sentence
-- **Compliance:** Which standards (NIST, PCI-DSS, ISO 27001)
+- **Business impact:** One sentence about what could happen
+- **Technical impact:** One sentence about the device or network
+- **Compliance:** Which standards this violates (PCI-DSS, NIST, ISO 27001)
 
 ### Step-by-step fix
-1. `enable`
-2. `configure terminal`
-3. `{violation.get('remediation', 'N/A')}`
-4. `write memory`
+1. Enter privileged mode: `enable`
+2. Enter configuration mode: `configure terminal`
+3. Apply the fix: `{violation.get('remediation', 'N/A')}`
+4. Save configuration: `write memory`
+5. Verify with: `show running-config`
 
-Keep total under 100 words."""
+### Verification
+Run `show running-config` and confirm the change is present.
 
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": "Network security expert. Markdown only."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=280
-        )
-        return response.choices[0].message.content
+RULES:
+- Use ONLY the markdown format above
+- Keep each bullet to ONE clear sentence
+- Total length: under 180 words"""
 
-    except Exception as e:
-        error_msg = str(e).lower()
-        if 'rate' in error_msg or '429' in error_msg:
-            return "AI explanation temporarily unavailable (rate limit). Please try again later."
-        return "AI explanation unavailable."
+    result = call_ai(
+        messages=[
+            {"role": "system", "content": "You are a network security expert. Output markdown only."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.4,
+        max_tokens=500
+    )
+
+    if not result:
+        return "AI explanation temporarily unavailable. All models are rate-limited or unreachable."
+
+    return result
 
 
 @app.route('/')
@@ -121,12 +158,9 @@ def upload_file():
         violations, passed = engine.run_checks()
         score = engine.get_compliance_score()
 
-        # Only generate AI explanations for HIGH severity violations to save tokens
+        # Generate AI explanations for EVERY violation
         for violation in violations:
-            if violation['severity'] == 'HIGH':
-                violation['ai_explanation'] = get_ai_explanation(violation)
-            else:
-                violation['ai_explanation'] = ''
+            violation['ai_explanation'] = get_ai_explanation(violation)
 
         results = {
             'filename': filename,
@@ -221,13 +255,9 @@ def upload_batch():
             violations, passed = engine.run_checks()
             score = engine.get_compliance_score()
 
-            # Get AI explanations for top 2 HIGH severity violations only (for speed)
-            high_violations = [v for v in violations if v['severity'] == 'HIGH'][:2]
-            for v in high_violations:
-                v['ai_explanation'] = get_ai_explanation(v)
+            # Generate AI explanations for ALL violations (batch too)
             for v in violations:
-                if 'ai_explanation' not in v:
-                    v['ai_explanation'] = ''
+                v['ai_explanation'] = get_ai_explanation(v)
 
             results = {
                 'filename': file_name,
@@ -287,7 +317,7 @@ def upload_batch():
 
 @app.route('/api/audit', methods=['POST'])
 def api_audit():
-    """REST API endpoint for programmatic access"""
+    """REST API endpoint"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
 
@@ -317,26 +347,22 @@ def api_audit():
 
 @app.route('/history')
 def history():
-    """Show all past audits"""
     audits = get_all_audits()
     return render_template('history.html', audits=audits)
 
 
 @app.route('/audit/<int:audit_id>')
 def view_audit(audit_id):
-    """View a specific audit from history"""
     audit = get_audit_by_id(audit_id)
     if not audit:
         flash('Audit not found')
         return redirect(url_for('history'))
-
     chat_history = get_chat_history(audit_id)
     return render_template('result.html', results=audit, chat_history=chat_history)
 
 
 @app.route('/audit/<int:audit_id>/delete', methods=['POST'])
 def delete_audit_route(audit_id):
-    """Delete an audit"""
     delete_audit(audit_id)
     flash('Audit deleted successfully')
     return redirect(url_for('history'))
@@ -344,7 +370,7 @@ def delete_audit_route(audit_id):
 
 @app.route('/audit/<int:audit_id>/chat', methods=['POST'])
 def chat_with_ai(audit_id):
-    """AI Chat Assistant — single model, no retries"""
+    """AI Chat — multi-model fallback, full quality"""
     data = request.get_json()
     user_message = data.get('message', '').strip()
 
@@ -381,7 +407,7 @@ VIOLATIONS FOUND:
 PASSED CHECKS:
 {passed_summary}
 
-Answer the user's question clearly and concisely. If they ask for commands, provide exact vendor-specific ({audit['vendor']}) commands. Keep answers under 120 words."""
+Answer the user's question clearly and concisely. If they ask for commands, provide exact vendor-specific ({audit['vendor']}) commands. Keep answers under 200 words."""
 
     past_chats = get_chat_history(audit_id)
     messages = [{"role": "system", "content": context}]
@@ -392,19 +418,7 @@ Answer the user's question clearly and concisely. If they ask for commands, prov
 
     messages.append({"role": "user", "content": user_message})
 
-    ai_response = None
-
-    if ai_enabled:
-        try:
-            response = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=220
-            )
-            ai_response = response.choices[0].message.content
-        except Exception as e:
-            print('Chat error: ' + str(e))
+    ai_response = call_ai(messages=messages, temperature=0.7, max_tokens=400)
 
     if not ai_response:
         ai_response = "Sorry, AI is temporarily unavailable. Please try again in a moment."
@@ -415,7 +429,6 @@ Answer the user's question clearly and concisely. If they ask for commands, prov
 
 @app.route('/audit/<int:audit_id>/fix-script')
 def generate_fix_script(audit_id):
-    """Generate a single remediation script for all violations"""
     audit = get_audit_by_id(audit_id)
     if not audit:
         flash('Audit not found')
@@ -476,11 +489,9 @@ def generate_fix_script(audit_id):
 
 @app.route('/audit/<int:audit_id>/graph')
 def knowledge_graph_route(audit_id):
-    """Return the knowledge graph for an audit as JSON"""
     audit = get_audit_by_id(audit_id)
     if not audit:
         return jsonify({'error': 'Audit not found'}), 404
-
     try:
         kg = ComplianceKnowledgeGraph(audit)
         kg.build()
